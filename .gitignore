@@ -1,0 +1,39 @@
+# Docker volumes and data
+prometheus_data/
+grafana_data/
+influxdb_data/
+ntopng_data/
+
+# Collected network data
+data/
+reports/
+logs/
+
+# Threat intelligence feeds (can be large)
+threat-feeds/
+
+# Environment files with secrets
+.env
+*.env
+
+# Grafana provisioning secrets
+grafana-provisioning/datasources/*.secret.yml
+
+# Backup files
+*.backup
+*.bak
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp

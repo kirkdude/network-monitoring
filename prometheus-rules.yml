@@ -1,0 +1,126 @@
+groups:
+  - name: network_security
+    interval: 60s
+    rules:
+      # Alert on suspicious connection count
+      - alert: HighConnectionCount
+        expr: sum by (src_ip) (openwrt_conntrack_connections) > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Device {{ $labels.src_ip }} has excessive connections"
+          description: "{{ $labels.src_ip }} has {{ $value }} active connections"
+
+      # Alert on new device
+      - alert: NewDeviceDetected
+        expr: changes(openwrt_dhcp_leases[5m]) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: "New device joined network"
+          description: "DHCP lease issued to new device"
+
+      # Alert on bandwidth spike
+      - alert: BandwidthSpike
+        expr: rate(openwrt_traffic_bytes[5m]) > 100000000  # 100 MB/s
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Unusual bandwidth usage detected"
+          description: "Traffic rate: {{ $value | humanize }}B/s"
+
+      # Alert on LG TV update attempt
+      - alert: LGTVUpdateAttempt
+        expr: sum(rate(openwrt_dns_query_blocked{client_ip="192.168.1.70", domain=~".*lge\\.com"}[5m])) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "LG TV trying to reach update servers"
+          description: "LG TV at 192.168.1.70 is attempting to contact blocked update servers"
+
+      # Alert on high CPU usage
+      - alert: RouterHighCPU
+        expr: 100 - (avg by (instance) (irate(openwrt_cpu_idle[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Router CPU usage is high"
+          description: "CPU usage is {{ $value }}%"
+
+  - name: compromise_detection
+    interval: 60s
+    rules:
+      # Port scanning detection
+      - alert: PortScanDetected
+        expr: |
+          count by (src_ip) (
+            count_over_time(openwrt_conntrack_connections[5m])
+          ) > 100
+        labels:
+          severity: high
+        annotations:
+          summary: "Port scan detected from {{ $labels.src_ip }}"
+          description: "Device {{ $labels.src_ip }} is making connections to an excessive number of ports"
+
+      # Data exfiltration detection
+      - alert: LargeDataTransfer
+        expr: |
+          sum by (src_ip) (
+            rate(openwrt_traffic_bytes_tx[5m])
+          ) > 50000000  # 50 MB/s upload
+        for: 10m
+        labels:
+          severity: high
+        annotations:
+          summary: "Large data upload from {{ $labels.src_ip }}"
+          description: "Device {{ $labels.src_ip }} is uploading {{ $value | humanize }}B/s"
+
+      # Unusual time-of-day activity
+      - alert: UnusualActivityTime
+        expr: |
+          sum by (src_ip) (
+            rate(openwrt_traffic_bytes[5m])
+          ) > 1000000
+          and hour() >= 2 and hour() <= 6
+        labels:
+          severity: info
+        annotations:
+          summary: "Unusual night-time activity from {{ $labels.src_ip }}"
+          description: "Device {{ $labels.src_ip }} is active during unusual hours (2 AM - 6 AM)"
+
+  - name: system_health
+    interval: 60s
+    rules:
+      # Router memory usage
+      - alert: RouterHighMemory
+        expr: (openwrt_memory_used / openwrt_memory_total) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Router memory usage is high"
+          description: "Memory usage is {{ $value }}%"
+
+      # Router down
+      - alert: RouterDown
+        expr: up{job="openwrt-router"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Router is unreachable"
+          description: "Prometheus cannot scrape metrics from router at 192.168.1.2"
+
+      # High disk usage (if monitored)
+      - alert: RouterHighDisk
+        expr: (openwrt_disk_used / openwrt_disk_total) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Router disk usage is high"
+          description: "Disk usage is {{ $value }}%"

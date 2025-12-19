@@ -1,0 +1,30 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'home-network'
+
+# Load alerting rules
+rule_files:
+  - 'rules.yml'
+
+# Scrape configurations
+scrape_configs:
+  # OpenWRT Router metrics
+  - job_name: 'openwrt-router'
+    static_configs:
+      - targets: ['192.168.1.2:9100']
+        labels:
+          instance: 'gl-mt2500a'
+          device_type: 'router'
+          location: 'primary'
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Add other devices as needed
+  # - job_name: 'mac-mini'
+  #   static_configs:
+  #     - targets: ['host.docker.internal:9100']
