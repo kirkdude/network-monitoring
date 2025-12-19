@@ -84,6 +84,8 @@ Defines scraping targets and intervals. Currently configured to scrape:
 - Router at `192.168.1.2:9100` every 15 seconds
 - Prometheus self-monitoring
 
+**Important**: The router target uses default instance labeling (`192.168.1.2:9100` format) which is required for Grafana dashboard variables to work correctly. Custom labels like `alias`, `device_type`, and `location` are added without overriding the instance label.
+
 ### prometheus-rules.yml
 Alert definitions including:
 - **Security alerts**: High connection count, port scanning, data exfiltration

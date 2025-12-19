@@ -15,7 +15,9 @@ scrape_configs:
     static_configs:
       - targets: ['192.168.1.2:9100']
         labels:
-          instance: 'gl-mt2500a'
+          # Note: instance label defaults to target address (192.168.1.2:9100)
+          # This format is required for Grafana dashboard variables to work
+          alias: 'gl-mt2500a'
           device_type: 'router'
           location: 'primary'
 

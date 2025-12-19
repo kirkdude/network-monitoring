@@ -77,7 +77,7 @@ curl http://192.168.1.2:9100/metrics
 {
   "health": "up",
   "job": "openwrt-router",
-  "instance": "gl-mt2500a",
+  "instance": "192.168.1.2:9100",
   "scrapeUrl": "http://192.168.1.2:9100/metrics",
   "lastError": "",
   "lastScrape": "2025-12-19T04:20:06Z",
@@ -85,6 +85,8 @@ curl http://192.168.1.2:9100/metrics
   "scrapeInterval": "15s"
 }
 ```
+
+**Note**: The instance label uses the `address:port` format (`192.168.1.2:9100`) which is required for Grafana dashboard variables to parse correctly. The router can be identified by its `alias: gl-mt2500a` label.
 
 **Query Test:**
 ```bash
