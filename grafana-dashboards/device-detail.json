@@ -1,0 +1,271 @@
+{
+  "dashboard": {
+    "title": "Device Detail",
+    "tags": ["device", "detail", "drill-down"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "device",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "query": "label_values(client_bandwidth_bytes_total, device_name)",
+          "current": {},
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "refresh": 2,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "type": "query"
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Device Information",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "label_replace(count(client_bandwidth_bytes_total{device_name=\"$device\"}), \"device\", \"$device\", \"\", \"\")",
+            "legendFormat": "Device: $device",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "none",
+          "textMode": "name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [{"value": 0, "color": "blue"}]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Current Download Bandwidth",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 4},
+        "targets": [
+          {
+            "expr": "sum(rate(client_bandwidth_bytes_total{device_name=\"$device\",direction=\"rx\"}[5m])) * 8",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "background"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bps",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 10000000, "color": "yellow"},
+                {"value": 50000000, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Current Upload Bandwidth",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 8, "x": 8, "y": 4},
+        "targets": [
+          {
+            "expr": "sum(rate(client_bandwidth_bytes_total{device_name=\"$device\",direction=\"tx\"}[5m])) * 8",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "background"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bps",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 5000000, "color": "yellow"},
+                {"value": 25000000, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Active Connections",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 4},
+        "targets": [
+          {
+            "expr": "sum(client_connections_total{device_name=\"$device\"})",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "background"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 500, "color": "yellow"},
+                {"value": 2000, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Bandwidth Over Time",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 10},
+        "targets": [
+          {
+            "expr": "sum(rate(client_bandwidth_bytes_total{device_name=\"$device\",direction=\"rx\"}[5m])) * 8",
+            "legendFormat": "Download",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(client_bandwidth_bytes_total{device_name=\"$device\",direction=\"tx\"}[5m])) * -8",
+            "legendFormat": "Upload",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bps",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 20,
+              "lineWidth": 2,
+              "showPoints": "never",
+              "axisPlacement": "auto"
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Connections by Protocol",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 18},
+        "targets": [
+          {
+            "expr": "sum by (protocol) (client_connections_total{device_name=\"$device\"})",
+            "legendFormat": "{{protocol}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "stacking": {"mode": "normal"},
+              "fillOpacity": 50
+            }
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Protocol Bandwidth Distribution",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 18},
+        "targets": [
+          {
+            "expr": "sum by (protocol) (rate(client_bandwidth_bytes_total{device_name=\"$device\",direction=\"rx\"}[5m]))",
+            "legendFormat": "{{protocol}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": ["value", "percent"]
+          },
+          "pieType": "pie",
+          "displayLabels": ["percent"]
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "Bps"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "DNS Activity",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 26},
+        "targets": [
+          {
+            "expr": "sum(client_dns_queries_total{device_name=\"$device\",query_type=\"all\"})",
+            "legendFormat": "Total Queries",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(client_dns_unique_domains{device_name=\"$device\"})",
+            "legendFormat": "Unique Domains",
+            "refId": "B"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "background"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0
+          }
+        }
+      }
+    ],
+    "links": [
+      {
+        "title": "Back to All Devices",
+        "url": "/d/e6c247ec-f126-416f-8df1-104802f2c71a/all-network-devices",
+        "icon": "arrow-left",
+        "type": "link"
+      }
+    ]
+  },
+  "overwrite": true
+}

@@ -1,0 +1,201 @@
+{
+  "dashboard": {
+    "title": "All Network Devices",
+    "tags": ["clients", "devices", "table"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-5m",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "All Devices - Live Activity",
+        "type": "table",
+        "gridPos": {"h": 25, "w": 24, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "sum by (device_name, ip, mac) (rate(client_bandwidth_bytes_total{direction=\"rx\"}[5m]) * 8)",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          },
+          {
+            "expr": "sum by (device_name, ip, mac) (rate(client_bandwidth_bytes_total{direction=\"tx\"}[5m]) * 8)",
+            "format": "table",
+            "instant": true,
+            "refId": "B"
+          },
+          {
+            "expr": "sum by (device_name, ip, mac) (client_connections_total)",
+            "format": "table",
+            "instant": true,
+            "refId": "C"
+          },
+          {
+            "expr": "sum by (device_name, ip, mac) (client_dns_queries_total{query_type=\"all\"})",
+            "format": "table",
+            "instant": true,
+            "refId": "D"
+          },
+          {
+            "expr": "sum by (device_name, ip, mac) (client_dns_unique_domains)",
+            "format": "table",
+            "instant": true,
+            "refId": "E"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "merge",
+            "options": {}
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "instance": true,
+                "job": true,
+                "__name__": true
+              },
+              "indexByName": {
+                "device_name": 0,
+                "ip": 1,
+                "mac": 2,
+                "Value #A": 3,
+                "Value #B": 4,
+                "Value #C": 5,
+                "Value #D": 6,
+                "Value #E": 7
+              },
+              "renameByName": {
+                "device_name": "Device Name",
+                "ip": "IP Address",
+                "mac": "MAC Address",
+                "Value #A": "Download",
+                "Value #B": "Upload",
+                "Value #C": "Connections",
+                "Value #D": "DNS Queries",
+                "Value #E": "Unique Domains"
+              }
+            }
+          }
+        ],
+        "options": {
+          "showHeader": true,
+          "cellHeight": "sm",
+          "footer": {
+            "show": true,
+            "countRows": true,
+            "reducer": ["sum"]
+          },
+          "sortBy": [
+            {
+              "displayName": "Download",
+              "desc": true
+            }
+          ]
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "left",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "filterable": true,
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "links": [
+              {
+                "title": "View ${__data.fields[\"Device Name\"]} Details",
+                "url": "/d/66bdd5ca-674b-46db-b177-59920156e784/device-detail?var-device=${__data.fields[\"Device Name\"]}&${__url_time_range}",
+                "targetBlank": false
+              }
+            ]
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "Download"},
+              "properties": [
+                {"id": "unit", "value": "bps"},
+                {"id": "custom.cellOptions", "value": {"type": "color-background"}},
+                {"id": "thresholds", "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"value": 0, "color": "dark-green"},
+                    {"value": 1000000, "color": "green"},
+                    {"value": 10000000, "color": "yellow"},
+                    {"value": 50000000, "color": "orange"},
+                    {"value": 100000000, "color": "red"}
+                  ]
+                }}
+              ]
+            },
+            {
+              "matcher": {"id": "byName", "options": "Upload"},
+              "properties": [
+                {"id": "unit", "value": "bps"},
+                {"id": "custom.cellOptions", "value": {"type": "color-background"}},
+                {"id": "thresholds", "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"value": 0, "color": "dark-green"},
+                    {"value": 500000, "color": "green"},
+                    {"value": 5000000, "color": "yellow"},
+                    {"value": 25000000, "color": "orange"},
+                    {"value": 50000000, "color": "red"}
+                  ]
+                }}
+              ]
+            },
+            {
+              "matcher": {"id": "byName", "options": "Connections"},
+              "properties": [
+                {"id": "unit", "value": "short"},
+                {"id": "decimals", "value": 0}
+              ]
+            },
+            {
+              "matcher": {"id": "byName", "options": "DNS Queries"},
+              "properties": [
+                {"id": "unit", "value": "short"},
+                {"id": "decimals", "value": 0}
+              ]
+            },
+            {
+              "matcher": {"id": "byName", "options": "Unique Domains"},
+              "properties": [
+                {"id": "unit", "value": "short"},
+                {"id": "decimals", "value": 0}
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "links": [
+      {
+        "title": "Back to Overview",
+        "url": "/d/c49d4df6-1edc-4998-bb71-95b81a909ece/client-network-monitoring",
+        "icon": "arrow-left",
+        "type": "link"
+      }
+    ]
+  },
+  "overwrite": true
+}
