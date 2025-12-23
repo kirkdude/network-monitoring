@@ -1,313 +1,459 @@
 {
-  "dashboard": {
-    "title": "Client Network Monitoring",
-    "tags": ["clients", "bandwidth", "dns"],
-    "timezone": "browser",
-    "schemaVersion": 38,
-    "version": 1,
-    "refresh": "30s",
-    "time": {
-      "from": "now-1h",
-      "to": "now"
-    },
-    "panels": [
-      {
-        "id": 1,
-        "title": "Top 10 Bandwidth Users (Download)",
-        "type": "bargauge",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
-        "targets": [
-          {
-            "expr": "topk(10, sum by (ip, mac) (rate(client_bandwidth_bytes_total{direction=\"rx\"}[5m]) * 8))",
-            "legendFormat": "{{ip}} ({{mac}})",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "orientation": "horizontal",
-          "displayMode": "gradient",
-          "showUnfilled": true
-        },
-        "fieldConfig": {
-          "defaults": {
-            "unit": "bps",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 1000000, "color": "yellow"},
-                {"value": 10000000, "color": "red"}
-              ]
-            }
-          }
-        }
-      },
-      {
-        "id": 2,
-        "title": "Top 10 Bandwidth Users (Upload)",
-        "type": "bargauge",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
-        "targets": [
-          {
-            "expr": "topk(10, sum by (ip, mac) (rate(client_bandwidth_bytes_total{direction=\"tx\"}[5m]) * 8))",
-            "legendFormat": "{{ip}} ({{mac}})",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "orientation": "horizontal",
-          "displayMode": "gradient",
-          "showUnfilled": true
-        },
-        "fieldConfig": {
-          "defaults": {
-            "unit": "bps",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 1000000, "color": "yellow"},
-                {"value": 5000000, "color": "red"}
-              ]
-            }
-          }
-        }
-      },
-      {
-        "id": 3,
-        "title": "Bandwidth Over Time (Top 5 Clients)",
-        "type": "timeseries",
-        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
-        "targets": [
-          {
-            "expr": "topk(5, sum by (ip) (rate(client_bandwidth_bytes_total{direction=\"rx\"}[5m]) * 8))",
-            "legendFormat": "{{ip}} Download",
-            "refId": "A"
-          },
-          {
-            "expr": "topk(5, sum by (ip) (rate(client_bandwidth_bytes_total{direction=\"tx\"}[5m]) * -8))",
-            "legendFormat": "{{ip}} Upload",
-            "refId": "B"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "bps",
-            "custom": {
-              "drawStyle": "line",
-              "lineInterpolation": "smooth",
-              "fillOpacity": 10
-            }
-          }
-        }
-      },
-      {
-        "id": 4,
-        "title": "Top DNS Query Clients",
-        "type": "bargauge",
-        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 16},
-        "targets": [
-          {
-            "expr": "topk(10, client_dns_queries_total{query_type=\"all\"})",
-            "legendFormat": "{{ip}}",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "orientation": "horizontal",
-          "displayMode": "gradient"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "unit": "short",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 100, "color": "yellow"},
-                {"value": 500, "color": "red"}
-              ]
-            }
-          }
-        }
-      },
-      {
-        "id": 5,
-        "title": "Unique Domains Per Client",
-        "type": "bargauge",
-        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 16},
-        "targets": [
-          {
-            "expr": "topk(10, client_dns_unique_domains)",
-            "legendFormat": "{{ip}}",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "orientation": "horizontal",
-          "displayMode": "gradient"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "unit": "short"
-          }
-        }
-      },
-      {
-        "id": 6,
-        "title": "Protocol Distribution",
-        "type": "piechart",
-        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 16},
-        "targets": [
-          {
-            "expr": "sum by (protocol) (rate(client_bandwidth_bytes_total{direction=\"rx\"}[5m]))",
-            "legendFormat": "{{protocol}}",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "legend": {
-            "displayMode": "table",
-            "placement": "right",
-            "values": ["value", "percent"]
-          }
-        },
-        "fieldConfig": {
-          "defaults": {
-            "unit": "Bps"
-          }
-        }
-      },
-      {
-        "id": 7,
-        "title": "Client Activity Table",
-        "type": "table",
-        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 24},
-        "targets": [
-          {
-            "expr": "sum by (ip, mac) (rate(client_bandwidth_bytes_total{direction=\"rx\"}[5m]) * 8)",
-            "format": "table",
-            "instant": true,
-            "refId": "A"
-          },
-          {
-            "expr": "sum by (ip, mac) (rate(client_bandwidth_bytes_total{direction=\"tx\"}[5m]) * 8)",
-            "format": "table",
-            "instant": true,
-            "refId": "B"
-          },
-          {
-            "expr": "sum by (ip) (client_connections_total)",
-            "format": "table",
-            "instant": true,
-            "refId": "C"
-          },
-          {
-            "expr": "client_dns_queries_total{query_type=\"all\"}",
-            "format": "table",
-            "instant": true,
-            "refId": "D"
-          }
-        ],
-        "transformations": [
-          {
-            "id": "merge",
-            "options": {}
-          },
-          {
-            "id": "organize",
-            "options": {
-              "excludeByName": {
-                "Time": true,
-                "instance": true,
-                "job": true
+  "id": 5,
+  "panels": [
+    {
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
               },
-              "renameByName": {
-                "ip": "IP Address",
-                "mac": "MAC Address",
-                "Value #A": "Download (bps)",
-                "Value #B": "Upload (bps)",
-                "Value #C": "Connections",
-                "Value #D": "DNS Queries"
+              {
+                "color": "yellow",
+                "value": 1000000
+              },
+              {
+                "color": "red",
+                "value": 10000000
               }
-            }
-          }
-        ],
-        "options": {
-          "showHeader": true,
-          "sortBy": [
-            {
-              "displayName": "Download (bps)",
-              "desc": true
-            }
-          ]
-        },
-        "fieldConfig": {
-          "defaults": {
-            "custom": {
-              "align": "left",
-              "filterable": true
-            }
+            ]
           },
-          "overrides": [
+          "unit": "bps",
+          "links": [
             {
-              "matcher": {"id": "byName", "options": "Download (bps)"},
-              "properties": [{"id": "unit", "value": "bps"}]
-            },
-            {
-              "matcher": {"id": "byName", "options": "Upload (bps)"},
-              "properties": [{"id": "unit", "value": "bps"}]
+              "title": "View ${__field.labels.device_name} Details",
+              "url": "/d/66bdd5ca-674b-46db-b177-59920156e784/device-detail?var-device=${__field.labels.device_name}&${__url_time_range}"
             }
           ]
         }
       },
-      {
-        "id": 8,
-        "title": "Connection Count by Client",
-        "type": "timeseries",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 34},
-        "targets": [
-          {
-            "expr": "topk(10, sum by (ip) (client_connections_total))",
-            "legendFormat": "{{ip}}",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "short",
-            "custom": {
-              "drawStyle": "line",
-              "lineInterpolation": "smooth"
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true
+      },
+      "targets": [
+        {
+          "expr": "sort_desc(topk(10, sum by (device_name) (rate(client_bandwidth_bytes_total{direction=\"rx\"}[$__range]) * 8)))",
+          "legendFormat": "{{device_name}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Top 10 Bandwidth Users (Download)",
+      "type": "bargauge"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1000000
+              },
+              {
+                "color": "red",
+                "value": 5000000
+              }
+            ]
+          },
+          "unit": "bps",
+          "links": [
+            {
+              "title": "View ${__field.labels.device_name} Details",
+              "url": "/d/66bdd5ca-674b-46db-b177-59920156e784/device-detail?var-device=${__field.labels.device_name}&${__url_time_range}"
             }
-          }
+          ]
         }
       },
-      {
-        "id": 9,
-        "title": "DNS Queries by Type",
-        "type": "timeseries",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 34},
-        "targets": [
-          {
-            "expr": "sum by (query_type) (rate(client_dns_queries_total[5m]))",
-            "legendFormat": "{{query_type}}",
-            "refId": "A"
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true
+      },
+      "targets": [
+        {
+          "expr": "sort_desc(topk(10, sum by (device_name) (rate(client_bandwidth_bytes_total{direction=\"tx\"}[$__range]) * 8)))",
+          "legendFormat": "{{device_name}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Top 10 Bandwidth Users (Upload)",
+      "type": "bargauge"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineInterpolation": "smooth"
+          },
+          "unit": "bps"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "topk(5, sum by (device_name) (rate(client_bandwidth_bytes_total{direction=\"rx\"}[$__range]) * 8))",
+          "legendFormat": "{{device_name}} Download",
+          "refId": "A"
+        },
+        {
+          "expr": "topk(5, sum by (device_name) (rate(client_bandwidth_bytes_total{direction=\"tx\"}[$__range]) * -8))",
+          "legendFormat": "{{device_name}} Upload",
+          "refId": "B"
+        }
+      ],
+      "title": "Bandwidth Over Time (Top 5 Clients)",
+      "type": "timeseries"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 500
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 16
+      },
+      "id": 4,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true
+      },
+      "targets": [
+        {
+          "expr": "sort_desc(topk(10, client_dns_queries_total{query_type=\"all\"}))",
+          "legendFormat": "{{device_name}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Top DNS Query Clients",
+      "type": "bargauge"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 16
+      },
+      "id": 5,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal"
+      },
+      "targets": [
+        {
+          "expr": "sort_desc(topk(10, client_dns_unique_domains))",
+          "legendFormat": "{{device_name}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Unique Domains Per Client",
+      "type": "bargauge"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 16
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (protocol) (rate(client_bandwidth_bytes_total{direction=\"rx\"}[$__range]))",
+          "legendFormat": "{{protocol}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Protocol Distribution",
+      "type": "piechart"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "filterable": true
           }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "reqps",
-            "custom": {
-              "drawStyle": "bars",
-              "lineInterpolation": "linear",
-              "fillOpacity": 80,
-              "stacking": {"mode": "normal"}
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Download (bps)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bps"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Upload (bps)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bps"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Device Name"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "View ${__data.fields[\"Device Name\"]} Details",
+                    "url": "/d/66bdd5ca-674b-46db-b177-59920156e784/device-detail?var-device=${__data.fields[\"Device Name\"]}&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 7,
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Download (bps)"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "sum by (device_name) (rate(client_bandwidth_bytes_total{direction=\"rx\"}[$__range]) * 8)",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (device_name) (rate(client_bandwidth_bytes_total{direction=\"tx\"}[$__range]) * 8)",
+          "format": "table",
+          "instant": true,
+          "refId": "B"
+        },
+        {
+          "expr": "sum by (device_name) (client_connections_total)",
+          "format": "table",
+          "instant": true,
+          "refId": "C"
+        },
+        {
+          "expr": "client_dns_queries_total{query_type=\"all\"}",
+          "format": "table",
+          "instant": true,
+          "refId": "D"
+        }
+      ],
+      "title": "Client Activity Table",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "instance": true,
+              "job": true
+            },
+            "renameByName": {
+              "Value #A": "Download (bps)",
+              "Value #B": "Upload (bps)",
+              "Value #C": "Connections",
+              "Value #D": "DNS Queries",
+              "device_name": "Device Name"
             }
           }
         }
-      }
-    ]
+      ],
+      "type": "table"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 34
+      },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "topk(10, sum by (device_name) (client_connections_total))",
+          "legendFormat": "{{device_name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Connection Count by Client",
+      "type": "timeseries"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 500
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 34
+      },
+      "id": 9,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true
+      },
+      "targets": [
+        {
+          "expr": "sort_desc(topk(15, dns_domain_queries))",
+          "legendFormat": "{{domain}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Top Domains Accessed",
+      "type": "bargauge"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": [
+    "clients",
+    "bandwidth",
+    "dns"
+  ],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
   },
-  "overwrite": true
+  "timezone": "browser",
+  "title": "Client Network Monitoring",
+  "uid": "c49d4df6-1edc-4998-bb71-95b81a909ece",
+  "version": 2
 }

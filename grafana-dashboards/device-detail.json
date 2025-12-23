@@ -1,7 +1,11 @@
 {
   "dashboard": {
     "title": "Device Detail",
-    "tags": ["device", "detail", "drill-down"],
+    "tags": [
+      "device",
+      "detail",
+      "drill-down"
+    ],
     "timezone": "browser",
     "schemaVersion": 38,
     "version": 1,
@@ -17,7 +21,7 @@
           "type": "query",
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "PBFA97CFB590B2093"
           },
           "query": "label_values(client_bandwidth_bytes_total, device_name)",
           "current": {},
@@ -27,8 +31,7 @@
           "refresh": 2,
           "regex": "",
           "skipUrlSync": false,
-          "sort": 1,
-          "type": "query"
+          "sort": 1
         }
       ]
     },
@@ -37,7 +40,12 @@
         "id": 1,
         "title": "Device Information",
         "type": "stat",
-        "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
+        "gridPos": {
+          "h": 4,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
         "targets": [
           {
             "expr": "label_replace(count(client_bandwidth_bytes_total{device_name=\"$device\"}), \"device\", \"$device\", \"\", \"\")",
@@ -54,19 +62,29 @@
             "mappings": [],
             "thresholds": {
               "mode": "absolute",
-              "steps": [{"value": 0, "color": "blue"}]
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "blue"
+                }
+              ]
             }
           }
         }
       },
       {
         "id": 2,
-        "title": "Current Download Bandwidth",
+        "title": "Average Download Bandwidth",
         "type": "stat",
-        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 4},
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 0,
+          "y": 4
+        },
         "targets": [
           {
-            "expr": "sum(rate(client_bandwidth_bytes_total{device_name=\"$device\",direction=\"rx\"}[5m])) * 8",
+            "expr": "sum(rate(client_bandwidth_bytes_total{device_name=\"$device\",direction=\"rx\"}[$__range])) * 8",
             "refId": "A"
           }
         ],
@@ -80,9 +98,18 @@
             "thresholds": {
               "mode": "absolute",
               "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 10000000, "color": "yellow"},
-                {"value": 50000000, "color": "red"}
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 10000000,
+                  "color": "yellow"
+                },
+                {
+                  "value": 50000000,
+                  "color": "red"
+                }
               ]
             }
           }
@@ -90,12 +117,17 @@
       },
       {
         "id": 3,
-        "title": "Current Upload Bandwidth",
+        "title": "Average Upload Bandwidth",
         "type": "stat",
-        "gridPos": {"h": 6, "w": 8, "x": 8, "y": 4},
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 8,
+          "y": 4
+        },
         "targets": [
           {
-            "expr": "sum(rate(client_bandwidth_bytes_total{device_name=\"$device\",direction=\"tx\"}[5m])) * 8",
+            "expr": "sum(rate(client_bandwidth_bytes_total{device_name=\"$device\",direction=\"tx\"}[$__range])) * 8",
             "refId": "A"
           }
         ],
@@ -109,9 +141,18 @@
             "thresholds": {
               "mode": "absolute",
               "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 5000000, "color": "yellow"},
-                {"value": 25000000, "color": "red"}
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 5000000,
+                  "color": "yellow"
+                },
+                {
+                  "value": 25000000,
+                  "color": "red"
+                }
               ]
             }
           }
@@ -119,12 +160,17 @@
       },
       {
         "id": 4,
-        "title": "Active Connections",
+        "title": "Peak Connections",
         "type": "stat",
-        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 4},
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 16,
+          "y": 4
+        },
         "targets": [
           {
-            "expr": "sum(client_connections_total{device_name=\"$device\"})",
+            "expr": "sum(max_over_time(client_connections_total{device_name=\"$device\"}[$__range]))",
             "refId": "A"
           }
         ],
@@ -139,9 +185,18 @@
             "thresholds": {
               "mode": "absolute",
               "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 500, "color": "yellow"},
-                {"value": 2000, "color": "red"}
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 500,
+                  "color": "yellow"
+                },
+                {
+                  "value": 2000,
+                  "color": "red"
+                }
               ]
             }
           }
@@ -151,7 +206,12 @@
         "id": 5,
         "title": "Bandwidth Over Time",
         "type": "timeseries",
-        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 10},
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 10
+        },
         "targets": [
           {
             "expr": "sum(rate(client_bandwidth_bytes_total{device_name=\"$device\",direction=\"rx\"}[5m])) * 8",
@@ -182,7 +242,12 @@
         "id": 6,
         "title": "Connections by Protocol",
         "type": "timeseries",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 18},
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 18
+        },
         "targets": [
           {
             "expr": "sum by (protocol) (client_connections_total{device_name=\"$device\"})",
@@ -196,7 +261,9 @@
             "custom": {
               "drawStyle": "line",
               "lineInterpolation": "smooth",
-              "stacking": {"mode": "normal"},
+              "stacking": {
+                "mode": "normal"
+              },
               "fillOpacity": 50
             }
           }
@@ -206,7 +273,12 @@
         "id": 7,
         "title": "Protocol Bandwidth Distribution",
         "type": "piechart",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 18},
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 18
+        },
         "targets": [
           {
             "expr": "sum by (protocol) (rate(client_bandwidth_bytes_total{device_name=\"$device\",direction=\"rx\"}[5m]))",
@@ -218,10 +290,15 @@
           "legend": {
             "displayMode": "table",
             "placement": "right",
-            "values": ["value", "percent"]
+            "values": [
+              "value",
+              "percent"
+            ]
           },
           "pieType": "pie",
-          "displayLabels": ["percent"]
+          "displayLabels": [
+            "percent"
+          ]
         },
         "fieldConfig": {
           "defaults": {
@@ -233,7 +310,12 @@
         "id": 8,
         "title": "DNS Activity",
         "type": "stat",
-        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 26},
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 0,
+          "y": 26
+        },
         "targets": [
           {
             "expr": "sum(client_dns_queries_total{device_name=\"$device\",query_type=\"all\"})",
@@ -265,7 +347,8 @@
         "icon": "arrow-left",
         "type": "link"
       }
-    ]
+    ],
+    "uid": "66bdd5ca-674b-46db-b177-59920156e784"
   },
   "overwrite": true
 }
