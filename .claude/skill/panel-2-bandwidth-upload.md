@@ -1,25 +1,75 @@
 # Panel 2: Top 10 Bandwidth Users (Upload)
 
 ## Panel Overview
+
 - **Panel ID:** 2
 - **Title:** Top 10 Bandwidth Users (Upload)
-- **Type:** Bar Gauge (Horizontal)
+- **Type:** Table with LCD Gauge (converted from Bar Gauge for proper sorting)
 - **Grid Position:** x=12, y=0, width=12, height=8 (top-right)
-- **Purpose:** Shows the top 10 clients by upload bandwidth usage
+- **Purpose:** Shows the top 10 clients by upload bandwidth usage, sorted by value descending
 
 ## Data Source
 
-### Prometheus Query
+### Current: InfluxDB Flux Query
+
+```flux
+from(bucket: "network")
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r._measurement == "bandwidth" and r.direction == "tx")
+  |> drop(columns: ["_time"])
+  |> group(columns: ["device_name"])
+  |> sum(column: "_value")
+  |> group()
+  |> map(fn: (r) => ({ device_name: r.device_name, _value: float(v: r._value) * 8.0 / (float(v: uint(v: v.timeRangeStop) - uint(v: v.timeRangeStart)) / 1000000000.0) }))
+  |> sort(columns: ["_value"], desc: true)
+  |> limit(n: 10)
+```
+
+**Key differences from download panel:**
+
+- `direction == "tx"` instead of "rx"
+- Same float conversion, ungrouping, and sorting pattern
+
+### Legacy: Prometheus Query (DEPRECATED)
+
 ```promql
 sort_desc(topk(10, sum by (device_name) (rate(client_bandwidth_bytes_total{direction="tx"}[$__range]) * 8)))
 ```
 
+## Critical Updates (2025-12-26)
+
+1. **Converted to table with LCD Gauge** for proper value-based sorting
+2. **Added top_n variable support** - respects dashboard selector (5-50 devices)
+3. **Same visual style as Panel 1** - consistent LCD gauge display
+
+## Critical Lessons Learned
+
+See Panel 1 skill for complete Flux query best practices. Key points:
+
+- ✅ Must use `float(v: r._value)` to prevent type conflict
+- ✅ Must `drop(columns: ["_time"])` to prevent series explosion
+- ✅ Must `group()` after aggregation to ungroup for table sorting
+- ✅ Table with LCD Gauge is ONLY way to get value-based sorting (bar gauges sort alphabetically)
+- ✅ Must use `keep(columns: ["device_name", "_value"])` to preserve device names
+- ✅ Must `rename(columns: {_value: "Bandwidth"})` IN THE QUERY (not transformation)
+
+## Security Context
+
+**Companion Panels:**
+
+- **Panel 11:** Upload Bandwidth Over Time - Shows trends for same top N devices
+- **Panel 3:** Download Bandwidth Over Time - Comparison context
+
+Both time series panels (3 & 11) use security-focused scoring algorithm with 10 Mbps upload threshold bonus.
+
 ### Metrics Used
+
 - `client_bandwidth_bytes_total{direction="tx"}` - Total bytes uploaded per client
   - Labels: `device_name`, `ip`, `mac`, `protocol`, `direction`
   - Type: Counter (cumulative)
 
 ### Data Collection Flow
+
 1. **Router (GL-MT2500A):** nlbwmon tracks per-IP bandwidth by protocol
 2. **Export Script:** `/root/bin/export-client-bandwidth.sh`
    - Parses nlbwmon database (~19 seconds execution time)
@@ -34,6 +84,7 @@ sort_desc(topk(10, sum by (device_name) (rate(client_bandwidth_bytes_total{direc
 ## Current Configuration
 
 ### Thresholds & Colors
+
 - Green: 0 - 999,999 bps (< 1 Mbps)
 - Yellow: 1,000,000 - 4,999,999 bps (1-5 Mbps)
 - Red: 5,000,000+ bps (> 5 Mbps)
@@ -41,18 +92,25 @@ sort_desc(topk(10, sum by (device_name) (rate(client_bandwidth_bytes_total{direc
 **Note:** Upload thresholds are lower than download because typical home upload is ~10% of download bandwidth.
 
 ### Display Settings
+
 - **Unit:** bps (bits per second)
-- **Display Mode:** Gradient horizontal bar gauge
-- **Show Unfilled:** Yes
-- **Legend Format:** `{{device_name}}`
-- **Query Type:** Instant (snapshot)
+- **Visualization Type:** Table with LCD Gauge cell display
+- **Columns (in order):**
+  1. Device (device name, clickable link to device detail) - First column
+  2. Bandwidth (LCD Gauge visualization, 400px width) - Second column
+- **Sorting:** Descending by Bandwidth value (highest at top)
+- **Transformations:**
+  - Organize: Rename columns, hide Time field
+  - **Note:** Column order is determined by Flux query's `keep()` function, NOT by indexByName
 
 ### Time Range
+
 - Uses: dashboard time range variable `$__range`
 - Default: Last 1 hour
 - Auto-refresh: Every 30 seconds
 
 ## What's Working Well
+
 - ✅ Device names are meaningful (90+ devices identified)
 - ✅ Lower thresholds appropriate for upload monitoring
 - ✅ Color-coded alerts for abnormal upload activity
@@ -60,6 +118,7 @@ sort_desc(topk(10, sum by (device_name) (rate(client_bandwidth_bytes_total{direc
 - ✅ Direction-specific (TX) clearly indicates upload
 
 ## Current Gaps
+
 - ❌ No drill-down links to device detail dashboard
 - ❌ No baseline comparison - can't tell if upload is abnormal for that device
 - ❌ No download/upload ratio analysis (upload should be ~10% of download)
@@ -70,8 +129,10 @@ sort_desc(topk(10, sum by (device_name) (rate(client_bandwidth_bytes_total{direc
 ## Potential Improvements
 
 ### 1. Add Upload/Download Ratio Analysis
+
 **What:** Show upload as percentage of download to detect anomalies
 **How:** Add second query showing ratio:
+
 ```promql
 (
   sum by (device_name) (rate(client_bandwidth_bytes_total{direction="tx"}[$__range]))
@@ -79,12 +140,15 @@ sort_desc(topk(10, sum by (device_name) (rate(client_bandwidth_bytes_total{direc
   sum by (device_name) (rate(client_bandwidth_bytes_total{direction="rx"}[$__range]))
 ) * 100
 ```
+
 Display as annotation: "Upload is X% of download"
 **Impact:** Detect data exfiltration - normal ratio is <10%, suspicious if >50%
 
 ### 2. Add Drill-Down Link to Device Detail
+
 **What:** Click device → navigate to device-specific dashboard
 **How:** Add data link in panel JSON:
+
 ```json
 {
   "dataLinks": [{
@@ -93,19 +157,24 @@ Display as annotation: "Upload is X% of download"
   }]
 }
 ```
+
 **Impact:** Quick investigation of suspicious upload patterns
 
 ### 3. Add IoT Device Upload Alert
+
 **What:** Highlight IoT devices with >10 Mbps upload (abnormal)
 **How:**
+
 - Tag devices as IoT in device registry
 - Create alert rule for IoT upload >10 Mbps
 - Add panel override for IoT devices showing red threshold at 10 Mbps instead of 5 Mbps
 **Impact:** Early detection of compromised IoT devices (cameras, sensors)
 
 ### 4. Add Baseline Comparison
+
 **What:** Compare current upload to device's 7-day average
 **How:** Add second query:
+
 ```promql
 (
   sum by (device_name) (rate(client_bandwidth_bytes_total{direction="tx"}[1h]) * 8)
@@ -113,17 +182,21 @@ Display as annotation: "Upload is X% of download"
   avg_over_time(sum by (device_name) (rate(client_bandwidth_bytes_total{direction="tx"}[1h]) * 8)[7d:1h])
 ) * 100 - 100
 ```
+
 **Impact:** Detect sudden upload spikes (>300% of baseline = suspicious)
 
 ### 5. Add Beaconing Detection Annotation
+
 **What:** Detect regular interval uploads (C2 communication pattern)
 **How:** (Advanced - requires analysis script)
+
 - Analyze upload patterns for regularity (every 5 min, 10 min, etc.)
 - Flag devices with highly periodic upload behavior
 - Annotate panel with beaconing warning
 **Impact:** Detect compromised devices communicating with C2 servers
 
 ## Related Panels
+
 - **Panel 1:** Top Bandwidth Users (Download) - Compare ratios (upload should be ~10% of download)
 - **Panel 3:** Bandwidth Over Time - See temporal upload patterns
 - **Panel 4:** Top DNS Query Clients - Correlate upload with DNS activity
@@ -131,7 +204,9 @@ Display as annotation: "Upload is X% of download"
 - **Panel 9:** Top Domains - See what domains device is uploading to
 
 ## Investigation Workflow
+
 When you see suspicious high upload activity:
+
 1. **Identify** the device name and note current upload bandwidth
 2. **Check Panel 1** (Download) - Calculate ratio: upload/download. If >50%, suspicious
 3. **Check Panel 3** (Over Time) - Is upload pattern regular (beaconing)? Or bursty (large file upload)?
@@ -143,8 +218,10 @@ When you see suspicious high upload activity:
 ## Common Scenarios & Responses
 
 ### Scenario 1: IoT Device with High Upload
+
 **Signs:** Camera, sensor, or smart home device uploading >10 Mbps
 **Investigation:**
+
 1. IoT devices should have minimal upload (<2 Mbps typically, cameras <5 Mbps)
 2. Check if upload aligns with device function (security camera recording to cloud = normal)
 3. Check domains - should only be manufacturer cloud (e.g., wyze.com, ring.com)
@@ -152,8 +229,10 @@ When you see suspicious high upload activity:
 5. **Action:** Isolate to IoT VLAN immediately, investigate further
 
 ### Scenario 2: Workstation with Unusually High Upload
+
 **Signs:** Desktop/laptop uploading >50 Mbps sustained
 **Investigation:**
+
 1. Normal workstation upload: <10 Mbps (web browsing, email, chat)
 2. High upload could be:
    - Legitimate: Cloud backup, video call, file upload to cloud storage
@@ -163,8 +242,10 @@ When you see suspicious high upload activity:
 5. **Check upload/download ratio:** If upload >> download, suspicious
 
 ### Scenario 3: Regular Interval Upload Pattern (Beaconing)
+
 **Signs:** Device uploading small amounts at exact intervals (every 5 min, 10 min)
 **Investigation:**
+
 1. Beaconing is C2 (Command & Control) communication pattern
 2. Compromised devices check in with attacker server regularly
 3. **Check Panel 3 (Over Time):** Look for perfectly regular spikes
@@ -172,8 +253,10 @@ When you see suspicious high upload activity:
 5. **Action:** Isolate device immediately, block destination domain at firewall
 
 ### Scenario 4: Smart TV with Upload Spike
+
 **Signs:** LG TV, Apple TV, etc. suddenly uploading >20 Mbps
 **Investigation:**
+
 1. Smart TVs typically have minimal upload (<5 Mbps)
 2. Common causes:
    - Firmware update attempt (check Panel 9 for update.lge.com, etc.)
@@ -183,6 +266,7 @@ When you see suspicious high upload activity:
 4. **Consider:** Block telemetry domains for privacy (e.g., samba.lge.com)
 
 ## Files Referenced
+
 - **Dashboard JSON:** `grafana-dashboards/client-monitoring.json` (lines 50-95, Panel ID 2)
 - **Prometheus Config:** `prometheus.yml` (scrape config for router:9100)
 - **Router Export Script:** `/root/bin/export-client-bandwidth.sh` (on GL-MT2500A)

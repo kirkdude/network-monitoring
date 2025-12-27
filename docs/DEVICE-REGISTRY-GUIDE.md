@@ -3,6 +3,7 @@
 ## Overview
 
 Your network monitoring system uses a hybrid device identification approach:
+
 - **Manual names** for devices you care about (Living Room TV, Kirks Laptop)
 - **Automatic names** for everything else (Hostname + Vendor, or fallback to MAC)
 
@@ -13,16 +14,19 @@ Your network monitoring system uses a hybrid device identification approach:
 ### Quick Steps
 
 1. **SSH to router:**
+
    ```bash
    ssh root@192.168.1.2
    ```
 
 2. **Edit device registry:**
+
    ```bash
    vi /root/etc/device-registry.conf
    ```
 
 3. **Add device entries** (format: `MAC=Name`):
+
    ```
    a8:23:fe:2c:58:c5=Living Room LG TV
    80:f5:05:xx:xx:xx=Kirks Apple TV
@@ -49,6 +53,7 @@ ssh root@192.168.1.2 "cat /tmp/dhcp.leases"
 ```
 
 **Output format:**
+
 ```
 timestamp MAC_ADDRESS IP_ADDRESS HOSTNAME client-id
 1766215920 a8:23:fe:2c:58:c5 192.168.1.70 LGwebOSTV ...
@@ -72,24 +77,29 @@ Check the generated report at:
 The system uses this priority order to name devices:
 
 **1. Manual Registry** (Highest Priority)
+
 - File: `/root/etc/device-registry.conf`
 - Format: `MAC=Custom Name`
 - Example: `a8:23:fe:2c:58:c5=Living Room LG TV`
 
 **2. Hostname + Vendor**
+
 - Hostname from DHCP lease
 - Vendor from OUI lookup
 - Example: `LGwebOSTV (LG Electronics)`
 
 **3. Hostname Only**
+
 - When vendor not in OUI database
 - Example: `iPhone`, `Macmini`
 
 **4. Vendor Only**
+
 - When no hostname announced
 - Example: `Apple Inc.`
 
 **5. MAC Address** (Last Resort)
+
 - When no other data available
 - Example: `a0:66:2b`
 
@@ -129,11 +139,13 @@ bb:7a:53:xx:xx:xx=Bedroom Roku TV
 ### Naming Conventions
 
 **Recommended format:**
+
 - `Location Device Type` - e.g., "Living Room Apple TV"
 - `Owner's Device` - e.g., "Kirks iPhone"
 - `Function` - e.g., "Guest WiFi"
 
 **Avoid:**
+
 - Very long names (> 50 characters)
 - Special characters: `"`, `\`, newlines
 - Duplicate names (each device should be unique)
@@ -145,18 +157,21 @@ bb:7a:53:xx:xx:xx=Bedroom Roku TV
 ### Check Device Name is Applied
 
 1. **From router:**
+
    ```bash
    ssh root@192.168.1.2 "/root/bin/resolve-device-name.sh '192.168.1.70' 'a8:23:fe:2c:58:c5'"
    ```
+
    Should output: `Living Room LG TV` (if you added it)
 
 2. **From Prometheus:**
+
    ```bash
    curl http://192.168.1.2:9100/metrics | grep 'device_name="Living Room LG TV"'
    ```
 
 3. **From Grafana:**
-   - Open: http://localhost:3000/d/14cf33bf-29ea-41cd-9447-28e5e92b18f1/all-network-devices
+   - Open: <http://localhost:3000/d/14cf33bf-29ea-41cd-9447-28e5e92b18f1/all-network-devices>
    - Search for "Living Room LG TV"
    - Should appear in table
 
@@ -167,17 +182,20 @@ bb:7a:53:xx:xx:xx=Bedroom Roku TV
 ### Device Name Not Showing
 
 **Check manual registry format:**
+
 ```bash
 ssh root@192.168.1.2 "cat /root/etc/device-registry.conf"
 ```
 
 **Common issues:**
+
 - Typo in MAC address
 - Missing `=` separator
 - Extra spaces
 - Wrong case (MACs are case-insensitive but must match format)
 
 **Test resolution:**
+
 ```bash
 ssh root@192.168.1.2 "/root/bin/resolve-device-name.sh 'IP' 'MAC'"
 ```
@@ -186,7 +204,7 @@ ssh root@192.168.1.2 "/root/bin/resolve-device-name.sh 'IP' 'MAC'"
 
 - Wait 30 seconds for next Prometheus scrape
 - Force Grafana dashboard refresh (Ctrl+R or Cmd+R)
-- Check Prometheus target is UP: http://localhost:9090/targets
+- Check Prometheus target is UP: <http://localhost:9090/targets>
 
 ### Changes Not Persisting After Router Reboot
 
@@ -201,6 +219,7 @@ ssh root@192.168.1.2 "/root/bin/resolve-device-name.sh 'IP' 'MAC'"
 ### Current Vendors in Database
 
 The system includes these vendors:
+
 - Apple Inc.
 - LG Electronics
 - Google Inc.
@@ -219,13 +238,15 @@ ssh root@192.168.1.2 "vi /root/etc/oui-vendors.txt"
 ```
 
 Add entries in format: `OUI=Vendor Name`
+
 ```
 A1:B2:C3=Vendor Name Inc.
 ```
 
 **To find OUI:**
+
 - First 3 octets of MAC address
-- Look up at: https://maclookup.app/
+- Look up at: <https://maclookup.app/>
 - Or check manufacturer website
 
 ---
@@ -233,18 +254,22 @@ A1:B2:C3=Vendor Name Inc.
 ## Dashboard Access
 
 ### All Devices Table (Primary View)
-**URL:** http://localhost:3000/d/14cf33bf-29ea-41cd-9447-28e5e92b18f1/all-network-devices
+
+**URL:** <http://localhost:3000/d/14cf33bf-29ea-41cd-9447-28e5e92b18f1/all-network-devices>
 
 **Features:**
+
 - Shows ALL 90+ devices (paginated 25 per page)
 - Search by device name
 - Sort by any column (bandwidth, connections, etc.)
 - Click any row → drill down to Device Detail
 
 ### Device Detail (Drill-Down View)
-**URL:** http://localhost:3000/d/66bdd5ca-674b-46db-b177-59920156e784/device-detail
+
+**URL:** <http://localhost:3000/d/66bdd5ca-674b-46db-b177-59920156e784/device-detail>
 
 **Features:**
+
 - Select device from dropdown
 - Bandwidth trends over time
 - Connection patterns
@@ -258,12 +283,15 @@ A1:B2:C3=Vendor Name Inc.
 ### Example 1: Name Your Apple TV
 
 1. Find MAC address:
+
    ```bash
    cat ~/network-monitoring/reports/client-activity-2025-12-19.md | grep "MD-DS3PDC4"
    ```
+
    Output: `MD-DS3PDC4 (Apple Inc.) | 192.168.1.109 | 80:f5:05`
 
 2. Add to registry:
+
    ```bash
    ssh root@192.168.1.2
    echo "80:f5:05:xx:xx:xx=Living Room Apple TV" >> /root/etc/device-registry.conf
