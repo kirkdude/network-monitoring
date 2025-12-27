@@ -37,3 +37,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Serena MCP server cache
+.serena/cache/

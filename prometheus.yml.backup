@@ -12,8 +12,8 @@ rule_files:
 scrape_configs:
   # OpenWRT Router metrics
   - job_name: 'openwrt-router'
-    scrape_interval: 30s
-    scrape_timeout: 25s
+    scrape_interval: 120s
+    scrape_timeout: 90s
     static_configs:
       - targets: ['192.168.1.2:9100']
         labels:
