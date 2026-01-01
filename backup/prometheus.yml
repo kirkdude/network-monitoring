@@ -1,0 +1,92 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'home-network'
+
+# Load alerting rules
+rule_files:
+  - 'rules.yml'
+
+# Scrape configurations
+scrape_configs:
+  # OpenWRT Router metrics
+  - job_name: 'openwrt-router'
+    scrape_interval: 120s
+    scrape_timeout: 90s
+    static_configs:
+      - targets: ['192.168.1.2:9100']
+        labels:
+          alias: 'gl-mt2500a'
+          device_type: 'router'
+          location: 'primary'
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Blackbox Exporter - CDN Latency Monitoring (ICMP)
+  - job_name: 'blackbox_cdn_latency'
+    scrape_interval: 30s
+    metrics_path: /probe
+    params:
+      module: [icmp]
+    static_configs:
+      - targets:
+          - nflxvideo.net      # Netflix CDN
+          - googlevideo.com    # YouTube CDN
+          - cloudfront.net     # Amazon CloudFront
+          - akamaized.net      # Akamai CDN
+        labels:
+          cdn_type: 'streaming'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox_exporter:9115
+
+  # Blackbox Exporter - DNS Resolution Timing
+  - job_name: 'blackbox_dns_timing'
+    scrape_interval: 30s
+    metrics_path: /probe
+    params:
+      module: [dns]
+    static_configs:
+      - targets:
+          - www.netflix.com
+          - youtube.com
+          - primevideo.com
+          - disneyplus.com
+        labels:
+          service_type: 'streaming'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox_exporter:9115
+
+  # Blackbox Exporter - CDN HTTP Availability
+  - job_name: 'blackbox_cdn_http'
+    scrape_interval: 60s
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://www.netflix.com
+          - https://www.youtube.com
+          - https://www.primevideo.com
+        labels:
+          check_type: 'availability'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox_exporter:9115
