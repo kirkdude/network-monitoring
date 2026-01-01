@@ -1,0 +1,26 @@
+modules:
+  # ICMP probe for latency measurements to streaming CDNs
+  icmp:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      preferred_ip_protocol: "ip4"
+
+  # HTTP probe for CDN availability
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      method: GET
+      valid_status_codes: [200, 201, 204, 206, 301, 302, 307, 308]
+      follow_redirects: true
+      preferred_ip_protocol: "ip4"
+
+  # DNS probe for DNS resolution time
+  dns:
+    prober: dns
+    timeout: 5s
+    dns:
+      preferred_ip_protocol: "ip4"
+      query_type: "A"
+      query_name: "example.com"  # Default query name, will be overridden by target

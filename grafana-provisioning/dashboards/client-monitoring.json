@@ -54,6 +54,23 @@
                 "value": 400
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Device"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "View ${__data.fields[\"Device\"]} Details",
+                    "url": "/d/66bdd5ca-674b-46db-b177-59920156e784/device-detail?var-device=${__data.fields[\"Device\"]}&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -156,6 +173,23 @@
               {
                 "id": "custom.width",
                 "value": 400
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Device"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "View ${__data.fields[\"Device\"]} Details",
+                    "url": "/d/66bdd5ca-674b-46db-b177-59920156e784/device-detail?var-device=${__data.fields[\"Device\"]}&${__url_time_range}"
+                  }
+                ]
               }
             ]
           }
@@ -350,7 +384,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dns_query\")\n  |> drop(columns: [\"_time\"])\n  |> group(columns: [\"device_name\"])\n  |> count()\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n  |> limit(n: ${top_n})",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dns_query\" and r._field == \"domain\")\n  |> drop(columns: [\"_time\"])\n  |> group(columns: [\"device_name\"])\n  |> count()\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n  |> limit(n: ${top_n})",
           "refId": "A"
         }
       ],
@@ -591,7 +625,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dns_query\")\n  |> drop(columns: [\"_time\"])\n  |> group(columns: [\"device_name\"])\n  |> count()\n  |> group()\n  |> keep(columns: [\"device_name\", \"_value\"])\n  |> rename(columns: {_value: \"DNS_Queries\"})",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dns_query\" and r._field == \"domain\")\n  |> drop(columns: [\"_time\"])\n  |> group(columns: [\"device_name\"])\n  |> count()\n  |> group()\n  |> keep(columns: [\"device_name\", \"_value\"])\n  |> rename(columns: {_value: \"DNS_Queries\"})",
           "refId": "D"
         }
       ],
@@ -827,7 +861,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dns_query\" and r._field == \"domain\")\n  |> map(fn: (r) => ({r with domain: r._value}))\n  |> drop(columns: [\"_time\", \"_start\", \"_stop\"])\n  |> group(columns: [\"domain\", \"device_name\"])\n  |> count()\n  |> group()\n  |> rename(columns: {_value: \"Queries\"})\n  |> keep(columns: [\"domain\", \"device_name\", \"Queries\"])\n  |> sort(columns: [\"Queries\"], desc: true)\n  |> limit(n: 100)",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dns_query\" and r._field == \"domain\")\n  |> map(fn: (r) => ({r with domain: r._value}))\n  |> drop(columns: [\"_time\", \"_start\", \"_stop\"])\n  |> group(columns: [\"domain\", \"device_name\"])\n  |> count()\n  |> group()\n  |> rename(columns: {_value: \"Queries\", device_name: \"Device Name\", domain: \"Domain\"})\n  |> keep(columns: [\"Domain\", \"Device Name\", \"Queries\"])\n  |> sort(columns: [\"Queries\"], desc: true)\n  |> limit(n: 100)",
           "refId": "A"
         }
       ],
@@ -914,6 +948,25 @@
         "query": "5,10,15,20,25,30,50",
         "skipUrlSync": false,
         "type": "custom"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": ""
+        },
+        "hide": 0,
+        "label": "Domain Filter",
+        "name": "domain_filter",
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "skipUrlSync": false,
+        "type": "textbox"
       }
     ]
   },

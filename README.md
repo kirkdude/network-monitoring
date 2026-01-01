@@ -2,6 +2,8 @@
 
 Pure InfluxDB event-based monitoring for home network with real-time data collection.
 
+> **Note:** This project uses **Podman** (not Docker). All commands use `podman-compose` instead of `docker-compose`.
+
 ## Architecture
 
 ```
@@ -25,7 +27,7 @@ Bandwidth    ─────────┘               (line protocol)
 
 ```bash
 cd ~/src/network-monitoring
-podman-compose up -d  # or docker-compose
+podman-compose up -d
 podman-compose ps
 ```
 
