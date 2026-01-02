@@ -141,7 +141,7 @@ def ping_host(host):
         host (str): Hostname or IP to ping
 
     Returns:
-        dict: Ping metrics or None if a critical error occurs.
+        dict: Ping metrics. On failure, returns a dict with default failure values.
     """
     # Initialize metrics with defaults for failure
     metrics = {
@@ -223,9 +223,6 @@ def output_line_protocol(metrics_list):
         metrics_list (list): List of metric dictionaries from ping_host()
     """
     for metrics in metrics_list:
-        if metrics is None:
-            continue
-
         # Build tags (escape special characters per line protocol spec)
         escaped_url = (
             metrics["url"].replace(",", "\\,").replace("=", "\\=").replace(" ", "\\ ")
