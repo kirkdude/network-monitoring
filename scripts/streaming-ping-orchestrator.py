@@ -16,6 +16,7 @@ Author: Network Monitoring Stack
 Date: 2026-01-01
 """
 
+import ipaddress
 import os
 import shutil
 import sys
@@ -39,12 +40,22 @@ INFLUXDB_ORG = os.getenv("INFLUXDB_ORG", "home")
 INFLUXDB_BUCKET = os.getenv("INFLUXDB_BUCKET", "network")
 
 # Streaming device IPs (LG TV, Roku TV, Apple TV)
+# Validate IP addresses to prevent Flux query injection
 STREAMING_DEVICES_STR = os.getenv(
     "STREAMING_DEVICES", "192.168.1.70,192.168.1.95,192.168.1.109"
 )
-STREAMING_DEVICES = [
-    ip.strip() for ip in STREAMING_DEVICES_STR.split(",") if ip.strip()
-]
+STREAMING_DEVICES = []
+for ip_str in STREAMING_DEVICES_STR.split(","):
+    ip = ip_str.strip()
+    if not ip:
+        continue
+    try:
+        ipaddress.ip_address(ip)
+        STREAMING_DEVICES.append(ip)
+    except ValueError:
+        sys.stderr.write(
+            f"WARNING: Invalid IP address '{ip}' in STREAMING_DEVICES ignored.\n"
+        )
 
 # CDN hosts to ping
 CDN_HOSTS = [
@@ -68,6 +79,15 @@ PING_EXECUTABLE = shutil.which("ping")
 if not PING_EXECUTABLE:
     sys.stderr.write("ERROR: 'ping' executable not found in PATH\n")
     sys.exit(1)
+
+# Pre-compiled regex patterns for ping output parsing (performance optimization)
+PACKET_LOSS_RE = re.compile(
+    r"(\d+) packets transmitted, (\d+) received, ([\d.]+)% packet loss"
+)
+RTT_RE = re.compile(
+    r"rtt min/avg/max/(?:mdev|stddev) = ([\d.]+)/([\d.]+)/([\d.]+)/([\d.]+)"
+)
+TTL_RE = re.compile(r"ttl=(\d+)")
 
 
 def is_streaming_active(client):
@@ -159,9 +179,7 @@ def ping_host(host):
 
         # Parse packet statistics
         # Example: "5 packets transmitted, 3 received, 40% packet loss"
-        packet_match = re.search(
-            r"(\d+) packets transmitted, (\d+) received, ([\d.]+)% packet loss", output
-        )
+        packet_match = PACKET_LOSS_RE.search(output)
         if packet_match:
             metrics["packets_transmitted"] = int(packet_match.group(1))
             metrics["packets_received"] = int(packet_match.group(2))
@@ -169,10 +187,7 @@ def ping_host(host):
 
         # Parse RTT statistics
         # Example: "rtt min/avg/max/mdev = 12.123/15.234/18.456/2.345 ms"
-        rtt_match = re.search(
-            r"rtt min/avg/max/(?:mdev|stddev) = ([\d.]+)/([\d.]+)/([\d.]+)/([\d.]+)",
-            output,
-        )
+        rtt_match = RTT_RE.search(output)
         if rtt_match:
             metrics["minimum_response_ms"] = float(rtt_match.group(1))
             metrics["average_response_ms"] = float(rtt_match.group(2))
@@ -182,7 +197,7 @@ def ping_host(host):
 
         # Parse TTL from first ping response
         # Example: "64 bytes from ... ttl=54 time=12.3 ms"
-        ttl_match = re.search(r"ttl=(\d+)", output)
+        ttl_match = TTL_RE.search(output)
         if ttl_match:
             metrics["ttl"] = int(ttl_match.group(1))
 
