@@ -30,32 +30,23 @@ from(bucket: "network")
 
 ## Data Source
 
-### Prometheus Query
-
-```promql
-sort_desc(topk(10, client_dns_queries_total{query_type="all"}))
-```
-
 ### Metrics Used
 
-- `client_dns_queries_total{query_type="all"}` - Total DNS queries per client
-  - Labels: `device_name`, `ip`, `query_type`
-  - Type: Counter (cumulative)
+- **InfluxDB:** `dns_query` measurement
+  - Tags: `device_name`, `ip`, `domain`, `query_type`
+  - Field: `domain` (string value)
   - Query types: A, AAAA, PTR, CNAME, MX, TXT, etc.
 
 ### Data Collection Flow
 
 1. **Router (GL-MT2500A):** dnsmasq DNS server logs all queries
-2. **Export Script:** `/root/bin/export-dns-queries.sh`
+2. **Export Script:** `/root/bin/send-dns-to-influx.sh`
    - Parses dnsmasq logs
-   - Aggregates queries per client IP
+   - Sends DNS query events to InfluxDB
    - Resolves device names via `/root/bin/resolve-device-name.sh`
-   - Execution time: < 5 seconds
-3. **Lua Collector:** `/usr/lib/lua/prometheus-collectors/client_dns.lua`
-   - Invoked by prometheus-node-exporter-lua
-   - Exports metrics on port 9100
-4. **Prometheus:** Scrapes router:9100 every 30 seconds
-5. **Grafana:** Queries Prometheus and visualizes in bar gauge
+3. **Telegraf:** Receives UDP packets on port 8094 (InfluxDB line protocol)
+4. **InfluxDB:** Stores DNS query events in "network" bucket
+5. **Grafana:** Queries InfluxDB and visualizes in table with LCD Gauge
 
 ## Current Configuration
 
@@ -132,12 +123,7 @@ And create DNS detail panel filtered by device
 ### 3. Add Failed Query Counter
 
 **What:** Show count of NXDOMAIN (domain not found) responses
-**How:** Add second metric from router:
-
-```promql
-client_dns_failed_queries_total
-```
-
+**How:** Add second Flux query filtering for failed DNS responses from InfluxDB
 Display as overlay or separate column
 **Impact:** High failed queries = DGA malware, typosquatting, or misconfiguration
 
@@ -160,7 +146,7 @@ Display as overlay or separate column
 
 - Maintain list of known bad domains (AlienVault OTX, Abuse.ch)
 - Check queried domains against list
-- Export metric: `client_malicious_dns_queries_total`
+- Store malicious query count in separate InfluxDB measurement
 - Add to panel with critical threshold
 **Impact:** Immediate detection of compromised devices
 
@@ -264,9 +250,7 @@ When you see excessive DNS queries:
 ## Files Referenced
 
 - **Dashboard JSON:** `grafana-dashboards/client-monitoring.json` (lines 129-174, Panel ID 4)
-- **Prometheus Config:** `prometheus.yml` (scrape config for router:9100)
-- **Router Export Script:** `/root/bin/export-dns-queries.sh` (on GL-MT2500A)
+- **Telegraf Config:** UDP listener on port 8094 for InfluxDB line protocol
+- **Router Export Script:** `/root/bin/send-dns-to-influx.sh` (on GL-MT2500A)
 - **Router DNS Logs:** dnsmasq logs on router (source data)
 - **Router Device Registry:** `/root/etc/device-registry.conf` (device naming)
-- **Lua Collector:** `/usr/lib/lua/prometheus-collectors/client_dns.lua` (on router)
-- **Python Report:** `/Users/kirkl/bin/generate-client-report` (similar queries)

@@ -30,12 +30,6 @@ from(bucket: "network")
 - `direction == "tx"` instead of "rx"
 - Same float conversion, ungrouping, and sorting pattern
 
-### Legacy: Prometheus Query (DEPRECATED)
-
-```promql
-sort_desc(topk(10, sum by (device_name) (rate(client_bandwidth_bytes_total{direction="tx"}[$__range]) * 8)))
-```
-
 ## Critical Updates (2025-12-26)
 
 1. **Converted to table with LCD Gauge** for proper value-based sorting
@@ -64,22 +58,23 @@ Both time series panels (3 & 11) use security-focused scoring algorithm with 10 
 
 ### Metrics Used
 
-- `client_bandwidth_bytes_total{direction="tx"}` - Total bytes uploaded per client
-  - Labels: `device_name`, `ip`, `mac`, `protocol`, `direction`
-  - Type: Counter (cumulative)
+- **InfluxDB:** `bandwidth` measurement with `direction="tx"` tag
+  - Tags: `device_name`, `ip`, `mac`, `protocol`, `direction`
+  - Field: `bytes` (integer - delta values sent every minute)
+  - Type: Event-based (deltas, not cumulative counters)
 
 ### Data Collection Flow
 
 1. **Router (GL-MT2500A):** nlbwmon tracks per-IP bandwidth by protocol
-2. **Export Script:** `/root/bin/export-client-bandwidth.sh`
-   - Parses nlbwmon database (~19 seconds execution time)
+   - **CRITICAL:** nlbwmon commit_interval MUST be 1 minute (not 24h) for real-time data
+2. **Export Script:** `/root/bin/send-bandwidth-to-influx.sh` (runs every minute via cron)
+   - Parses nlbwmon database with `nlbw -c show`
+   - Calculates deltas from previous run (only sends non-zero changes)
    - Resolves device names via `/root/bin/resolve-device-name.sh`
-   - Outputs Prometheus metrics format to stdout
-3. **Lua Collector:** `/usr/lib/lua/prometheus-collectors/client_bandwidth.lua`
-   - Invoked by prometheus-node-exporter-lua
-   - Exports metrics on port 9100
-4. **Prometheus:** Scrapes router:9100 every 30 seconds (25s timeout configured)
-5. **Grafana:** Queries Prometheus and visualizes in bar gauge
+   - **CRITICAL:** Has PID lock file to prevent concurrent runs
+3. **Telegraf:** Receives UDP packets on port 8094 (InfluxDB line protocol)
+4. **InfluxDB:** Stores bandwidth events in "network" bucket
+5. **Grafana:** Queries InfluxDB and visualizes in table with LCD Gauge
 
 ## Current Configuration
 
@@ -131,16 +126,7 @@ Both time series panels (3 & 11) use security-focused scoring algorithm with 10 
 ### 1. Add Upload/Download Ratio Analysis
 
 **What:** Show upload as percentage of download to detect anomalies
-**How:** Add second query showing ratio:
-
-```promql
-(
-  sum by (device_name) (rate(client_bandwidth_bytes_total{direction="tx"}[$__range]))
-  /
-  sum by (device_name) (rate(client_bandwidth_bytes_total{direction="rx"}[$__range]))
-) * 100
-```
-
+**How:** Add second Flux query showing ratio by joining upload and download data
 Display as annotation: "Upload is X% of download"
 **Impact:** Detect data exfiltration - normal ratio is <10%, suspicious if >50%
 
@@ -173,16 +159,7 @@ Display as annotation: "Upload is X% of download"
 ### 4. Add Baseline Comparison
 
 **What:** Compare current upload to device's 7-day average
-**How:** Add second query:
-
-```promql
-(
-  sum by (device_name) (rate(client_bandwidth_bytes_total{direction="tx"}[1h]) * 8)
-  /
-  avg_over_time(sum by (device_name) (rate(client_bandwidth_bytes_total{direction="tx"}[1h]) * 8)[7d:1h])
-) * 100 - 100
-```
-
+**How:** Add second Flux query to calculate 7-day baseline and compare
 **Impact:** Detect sudden upload spikes (>300% of baseline = suspicious)
 
 ### 5. Add Beaconing Detection Annotation
@@ -268,9 +245,7 @@ When you see suspicious high upload activity:
 ## Files Referenced
 
 - **Dashboard JSON:** `grafana-dashboards/client-monitoring.json` (lines 50-95, Panel ID 2)
-- **Prometheus Config:** `prometheus.yml` (scrape config for router:9100)
-- **Router Export Script:** `/root/bin/export-client-bandwidth.sh` (on GL-MT2500A)
+- **Telegraf Config:** UDP listener on port 8094 for InfluxDB line protocol
+- **Router Export Script:** `/root/bin/send-bandwidth-to-influx.sh` (on GL-MT2500A)
 - **Router Device Registry:** `/root/etc/device-registry.conf` (manual device naming)
 - **Router Name Resolution:** `/root/bin/resolve-device-name.sh` (device ID system)
-- **Lua Collector:** `/usr/lib/lua/prometheus-collectors/client_bandwidth.lua` (on router)
-- **Python Report:** `/Users/kirkl/bin/generate-client-report` (similar Prometheus queries)

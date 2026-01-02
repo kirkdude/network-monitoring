@@ -31,30 +31,23 @@ from(bucket: "network")
 
 ## Data Source
 
-### Prometheus Query
-
-```promql
-sort_desc(topk(10, client_dns_unique_domains))
-```
-
 ### Metrics Used
 
-- `client_dns_unique_domains` - Count of unique domains accessed per client
-  - Labels: `device_name`, `ip`
-  - Type: Gauge (current count)
+- **InfluxDB:** `dns_query` measurement
+  - Tags: `device_name`, `ip`, `domain`
+  - Field: `domain` (string value)
+  - Query counts unique domains per device using `distinct()` and `count()`
 
 ### Data Collection Flow
 
 1. **Router (GL-MT2500A):** dnsmasq DNS server logs all queries
-2. **Export Script:** `/root/bin/export-dns-queries.sh`
+2. **Export Script:** `/root/bin/send-dns-to-influx.sh`
    - Parses dnsmasq logs
-   - Counts unique domains per client IP (distinct domain names)
+   - Sends DNS query events to InfluxDB
    - Resolves device names via `/root/bin/resolve-device-name.sh`
-   - Execution time: < 5 seconds
-3. **Lua Collector:** `/usr/lib/lua/prometheus-collectors/client_dns.lua`
-   - Exports metrics on port 9100
-4. **Prometheus:** Scrapes router:9100 every 30 seconds
-5. **Grafana:** Queries Prometheus and visualizes in bar gauge
+3. **Telegraf:** Receives UDP packets on port 8094 (InfluxDB line protocol)
+4. **InfluxDB:** Stores DNS query events in "network" bucket
+5. **Grafana:** Queries InfluxDB using Flux `distinct()` and `count()` to calculate unique domains
 
 ## Current Configuration
 
@@ -117,11 +110,7 @@ sort_desc(topk(10, client_dns_unique_domains))
 ### 2. Add Query Count Ratio Analysis
 
 **What:** Show unique domains as percentage of total queries
-**How:** Add second visualization showing ratio:
-
-```promql
-client_dns_unique_domains / client_dns_queries_total{query_type="all"} * 100
-```
+**How:** Add second Flux query to join unique domain count with total query count and calculate ratio
 
 - **High ratio (>50%):** Each query is to different domain = scanning
 - **Low ratio (<10%):** Repeated queries to same domains = normal or beaconing
@@ -130,16 +119,7 @@ client_dns_unique_domains / client_dns_queries_total{query_type="all"} * 100
 ### 3. Add Baseline Comparison
 
 **What:** Compare current unique domains to device's 7-day average
-**How:** Add query:
-
-```promql
-(
-  client_dns_unique_domains
-  /
-  avg_over_time(client_dns_unique_domains[7d])
-) * 100 - 100
-```
-
+**How:** Add Flux query to calculate 7-day average and compare to current values
 **Impact:** Detect sudden increases (>200% = suspicious)
 
 ### 4. Add Domain Category Breakdown
@@ -149,7 +129,7 @@ client_dns_unique_domains / client_dns_queries_total{query_type="all"} * 100
 
 - Maintain domain category database
 - Track unique domains per category per device
-- Export metrics: `client_unique_domains_by_category{category="ads"}`
+- Add category tag to InfluxDB DNS measurements
 **Impact:** Understand device behavior - high ads category = normal browsing, high unknown = suspicious
 
 ### 5. Add New Domain Tracker
@@ -157,9 +137,9 @@ client_dns_unique_domains / client_dns_queries_total{query_type="all"} * 100
 **What:** Track first-time domain accesses (never seen before)
 **How:**
 
-- Track historical domains per device
+- Track historical domains per device in InfluxDB
 - Flag domains accessed for first time
-- Export metric: `client_new_domains_count`
+- Store in separate InfluxDB measurement
 **Impact:** Sudden spike in new domains = reconnaissance or compromise
 
 ## Related Panels
@@ -271,8 +251,7 @@ When you see high unique domain count:
 ## Files Referenced
 
 - **Dashboard JSON:** `grafana-dashboards/client-monitoring.json` (lines 175-202, Panel ID 5)
-- **Prometheus Config:** `prometheus.yml` (scrape config)
-- **Router Export Script:** `/root/bin/export-dns-queries.sh` (on GL-MT2500A)
+- **Telegraf Config:** UDP listener on port 8094 for InfluxDB line protocol
+- **Router Export Script:** `/root/bin/send-dns-to-influx.sh` (on GL-MT2500A)
 - **Router DNS Logs:** dnsmasq logs (source data)
 - **Router Device Registry:** `/root/etc/device-registry.conf` (device naming)
-- **Lua Collector:** `/usr/lib/lua/prometheus-collectors/client_dns.lua` (on router)

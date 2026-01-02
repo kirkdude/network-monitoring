@@ -45,25 +45,20 @@ from(bucket: "network")
 
 ## Data Source
 
-### Prometheus Query
-
-```promql
-topk(10, sum by (device_name) (client_connections_total))
-```
-
 ### Metrics Used
 
-- `client_connections_total` - Number of active TCP/UDP connections per client
-  - Labels: `device_name`, `ip`
+- **InfluxDB:** `connection_state` or `connections` measurement
+  - Tags: `device_name`, `ip`
+  - Field: Connection count (integer)
   - Type: Gauge (current count of active connections)
 
 ### Data Collection Flow
 
 1. **Router (GL-MT2500A):** Tracks active connections via netstat/conntrack
-2. **Export Script:** Connection data collected as part of router metrics export
-3. **Lua Collector:** Exports connection counts on port 9100
-4. **Prometheus:** Scrapes router:9100 every 30 seconds
-5. **Grafana:** Queries time series and displays top 10 as line graph
+2. **Export Script:** Connection data sent to InfluxDB via UDP
+3. **Telegraf:** Receives UDP packets on port 8094 (InfluxDB line protocol)
+4. **InfluxDB:** Stores connection state in "network" bucket
+5. **Grafana:** Queries time series using Flux and displays top N as line graph
 
 ## Current Configuration
 
@@ -306,7 +301,7 @@ When you see unusual connection patterns:
 ## Files Referenced
 
 - **Dashboard JSON:** `grafana-dashboards/client-monitoring.json` (lines 338-365, Panel ID 8)
-- **Prometheus Config:** `prometheus.yml` (scrape config)
+- **Telegraf Config:** UDP listener on port 8094 for InfluxDB line protocol
 - **Router Connection Tracking:** netstat/conntrack on GL-MT2500A
-- **Lua Collector:** Connection metrics export on port 9100
+- **Router Export Script:** Connection tracking script sending to InfluxDB
 - **Device Registry:** `/root/etc/device-registry.conf` (device naming)

@@ -268,6 +268,7 @@
     {
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.protocol}",
           "unit": "Bps"
         }
       },
@@ -298,7 +299,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bandwidth\")\n  |> filter(fn: (r) => r.device_name == \"${device}\")\n  |> filter(fn: (r) => r.direction == \"rx\")\n  |> group(columns: [\"protocol\"])\n  |> sum()\n  |> map(fn: (r) => ({\n      _value: float(v: r._value) * 8.0 / (float(v: uint(v: v.timeRangeStop) - uint(v: v.timeRangeStart)) / 1000000000.0),\n      protocol: r.protocol\n    }))\n  |> group(columns: [\"protocol\"])",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bandwidth\")\n  |> filter(fn: (r) => r.device_name == \"${device}\")\n  |> filter(fn: (r) => r.direction == \"rx\")\n  |> group(columns: [\"protocol\"])\n  |> sum()\n  |> map(fn: (r) => ({ r with _value: float(v: r._value) * 8.0 / (float(v: uint(v: v.timeRangeStop) - uint(v: v.timeRangeStart)) / 1000000000.0) }))\n  |> group(columns: [\"protocol\"])",
           "refId": "A"
         }
       ],

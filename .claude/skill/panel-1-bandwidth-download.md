@@ -25,12 +25,6 @@ from(bucket: "network")
   |> limit(n: 10)
 ```
 
-### Legacy: Prometheus Query (DEPRECATED)
-
-```promql
-sort_desc(topk(10, sum by (device_name) (rate(client_bandwidth_bytes_total{direction="rx"}[$__range]) * 8)))
-```
-
 ### Metrics Used
 
 - **InfluxDB:** `bandwidth` measurement with `direction="rx"` tag
@@ -270,17 +264,7 @@ Should be 192.168.1.124 (with static DHCP reservation for Mac mini)
 ### 2. Add Baseline Comparison Overlay
 
 **What:** Show current usage vs 7-day average as percent deviation
-**How:** Add second query to panel (as Query B):
-
-```promql
-(
-  sum by (device_name) (rate(client_bandwidth_bytes_total{direction="rx"}[1h]) * 8)
-  /
-  avg_over_time(sum by (device_name) (rate(client_bandwidth_bytes_total{direction="rx"}[1h]) * 8)[7d:1h])
-) * 100 - 100
-```
-
-Then transform to show both current and deviation
+**How:** Add second Flux query to panel (as Query B) to calculate 7-day average and compare
 **Impact:** Detect anomalies - devices >200% of baseline are suspicious
 
 ### 3. Add Time-of-Day Annotation
@@ -309,7 +293,7 @@ Then transform to show both current and deviation
 **How:** (Future enhancement - requires trust scoring system)
 
 - Calculate trust scores based on: baseline adherence, threat intel clean, device age
-- Store in separate metric: `device_trust_score{device_name}`
+- Store in separate InfluxDB measurement: `device_trust_score` with `device_name` tag
 - Add as second series or table column
 **Impact:** Immediate visibility into which devices need investigation
 
@@ -368,9 +352,7 @@ When you see suspicious high download activity:
 ## Files Referenced
 
 - **Dashboard JSON:** `grafana-dashboards/client-monitoring.json` (lines 3-48, Panel ID 1)
-- **Prometheus Config:** `prometheus.yml` (scrape config for router:9100)
-- **Router Export Script:** `/root/bin/export-client-bandwidth.sh` (on GL-MT2500A)
+- **Telegraf Config:** UDP listener on port 8094 for InfluxDB line protocol
+- **Router Export Script:** `/root/bin/send-bandwidth-to-influx.sh` (on GL-MT2500A)
 - **Router Device Registry:** `/root/etc/device-registry.conf` (manual device naming)
 - **Router Name Resolution:** `/root/bin/resolve-device-name.sh` (device ID system)
-- **Lua Collector:** `/usr/lib/lua/prometheus-collectors/client_bandwidth.lua` (on router)
-- **Python Report:** `/Users/kirkl/bin/generate-client-report` (similar Prometheus queries)

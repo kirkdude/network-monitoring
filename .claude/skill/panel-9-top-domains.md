@@ -21,10 +21,9 @@
 
 ### What Was Implemented
 
-1. **New Metric:** `dns_domain_device_queries` with full domain-device correlation
-   - Labels: `domain`, `device_name`, `ip`, `mac`
-   - Script: `/root/bin/export-dns-domain-devices.sh`
-   - Lua Collector: `/usr/lib/lua/prometheus-collectors/dns_domain_devices.lua`
+1. **InfluxDB Measurement:** `dns_query` events with full domain-device correlation
+   - Tags: `domain`, `device_name`, `ip`, `mac`
+   - Script: `/root/bin/dns-monitor-daemon.sh` (real-time streaming to InfluxDB)
 
 2. **New Panel 10:** Domain Access by Device (Drill-Down Table)
    - Shows all domain-device relationships
@@ -92,12 +91,6 @@ from(bucket: "network")
 5. **Ungroup with `group()`** - critical for table sorting
 6. Sort by count descending
 7. Limit to top 15
-
-### Legacy: Prometheus Query (DEPRECATED)
-
-```promql
-sort_desc(topk(15, dns_domain_queries))
-```
 
 ### Metrics Used
 
@@ -449,22 +442,12 @@ Display as heat map with:
 
 ## Critical Files
 
-### Files to Modify for Device Correlation
-
-- **Router Export Script:** `/root/bin/export-dns-queries.sh` (on GL-MT2500A)
-  - Modify to export dns_domain_device_queries with both domain AND device_name labels
-- **Lua Collector:** `/usr/lib/lua/prometheus-collectors/client_dns.lua` (on router)
-  - Update to handle new metric format
-- **Dashboard JSON:** `grafana-dashboards/client-monitoring.json` (Panel ID 9, lines 366-411)
-  - Update query to use new metric
-  - Add device correlation panel (new Panel 9B)
-
 ### Files Referenced
 
 - **Current Dashboard JSON:** `grafana-dashboards/client-monitoring.json` (lines 366-411, Panel ID 9)
-- **Prometheus Config:** `prometheus.yml` (scrape config)
+- **Telegraf Config:** UDP listener on port 8094 for InfluxDB line protocol
 - **Router DNS Logs:** `/var/log/dnsmasq.log` (on GL-MT2500A)
-- **Router Export Script:** `/root/bin/export-dns-queries.sh` (needs modification)
+- **Router Export Script:** `/root/bin/dns-monitor-daemon.sh` (real-time DNS streaming to InfluxDB)
 - **Router Device Registry:** `/root/etc/device-registry.conf` (device naming)
 
 ## Implementation Priority

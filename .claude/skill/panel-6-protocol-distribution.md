@@ -22,29 +22,24 @@
 
 ## Data Source
 
-### Prometheus Query
-
-```promql
-sum by (protocol) (rate(client_bandwidth_bytes_total{direction="rx"}[$__range]))
-```
-
 ### Metrics Used
 
-- `client_bandwidth_bytes_total{direction="rx"}` - Download bytes per protocol
-  - Labels: `device_name`, `ip`, `mac`, `protocol`, `direction`
-  - Type: Counter (cumulative)
+- **InfluxDB:** `bandwidth` measurement with `protocol` tag
+  - Tags: `device_name`, `ip`, `mac`, `protocol`, `direction`
+  - Field: `bytes` (integer - delta values sent every minute)
+  - Type: Event-based (deltas, not cumulative counters)
   - Common protocols: HTTPS, QUIC, HTTP, DNS, NTP, SSH, etc.
 
 ### Data Collection Flow
 
 1. **Router (GL-MT2500A):** nlbwmon tracks bandwidth by protocol (via port/pattern matching)
-2. **Export Script:** `/root/bin/export-client-bandwidth.sh`
-   - Parses nlbwmon database (~19 seconds)
+2. **Export Script:** `/root/bin/send-bandwidth-to-influx.sh` (runs every minute via cron)
+   - Parses nlbwmon database with `nlbw -c show`
+   - Calculates deltas from previous run (only sends non-zero changes)
    - Aggregates by protocol across all clients
-3. **Lua Collector:** `/usr/lib/lua/prometheus-collectors/client_bandwidth.lua`
-   - Exports on port 9100
-4. **Prometheus:** Scrapes router:9100 every 30 seconds
-5. **Grafana:** Queries Prometheus, aggregates by protocol, displays as pie chart
+3. **Telegraf:** Receives UDP packets on port 8094 (InfluxDB line protocol)
+4. **InfluxDB:** Stores bandwidth events in "network" bucket
+5. **Grafana:** Queries InfluxDB, aggregates by protocol, displays as pie chart
 
 ## Current Configuration
 
@@ -84,12 +79,7 @@ sum by (protocol) (rate(client_bandwidth_bytes_total{direction="rx"}[$__range]))
 ### 1. Add Per-Device Protocol Breakdown Panel
 
 **What:** New panel showing protocol distribution per device (not just network-wide)
-**How:** Create new table panel with query:
-
-```promql
-sum by (device_name, protocol) (rate(client_bandwidth_bytes_total{direction="rx"}[1h]))
-```
-
+**How:** Create new table panel with Flux query grouping by both device_name and protocol
 Display as table with devices as rows, protocols as columns
 **Impact:** Identify which devices use which protocols - key for security analysis
 
@@ -135,12 +125,7 @@ Create device list panel filtered by protocol
 ### 5. Add Protocol Timeline Panel
 
 **What:** Show protocol distribution changes over time (stacked area chart)
-**How:** Create separate panel with query:
-
-```promql
-sum by (protocol) (rate(client_bandwidth_bytes_total{direction="rx"}[5m]))
-```
-
+**How:** Create separate panel with Flux query aggregating by protocol over time windows
 Display as stacked area chart over last 24 hours
 **Impact:** See when protocol mix changed - correlate with events
 
@@ -192,13 +177,11 @@ When you see unexpected protocol distribution:
 1. **Check Panel 7 (Client Activity Table):**
    - Sort by bandwidth, identify high-bandwidth devices
    - Likely these devices are driving protocol distribution
-2. **Create per-device protocol query:**
+2. **Create per-device protocol Flux query:**
+   - Group by both device_name and protocol
+   - Identify which device uses suspicious protocol
 
-   ```promql
-   sum by (device_name, protocol) (rate(client_bandwidth_bytes_total{direction="rx"}[1h]))
-   ```
-
-3. Identify which device uses suspicious protocol
+3. Investigate suspicious device
 
 ### Step 5: Determine Action
 
@@ -215,12 +198,7 @@ When you see unexpected protocol distribution:
 **Investigation:**
 
 1. Tor provides anonymization - could be legitimate privacy tool or malicious
-2. **Check:** Which device is using Tor?
-
-   ```promql
-   client_bandwidth_bytes_total{protocol="tor"}
-   ```
-
+2. **Check:** Which device is using Tor? Filter InfluxDB data by protocol="tor"
 3. **Evaluate:**
    - Workstation with Tor Browser = likely legitimate privacy use
    - IoT device with Tor = compromised (IoT shouldn't need Tor)
@@ -274,7 +252,6 @@ When you see unexpected protocol distribution:
 ## Files Referenced
 
 - **Dashboard JSON:** `grafana-dashboards/client-monitoring.json` (lines 203-235, Panel ID 6)
-- **Prometheus Config:** `prometheus.yml` (scrape config)
-- **Router Export Script:** `/root/bin/export-client-bandwidth.sh` (on GL-MT2500A)
-- **Lua Collector:** `/usr/lib/lua/prometheus-collectors/client_bandwidth.lua` (on router)
+- **Telegraf Config:** UDP listener on port 8094 for InfluxDB line protocol
+- **Router Export Script:** `/root/bin/send-bandwidth-to-influx.sh` (on GL-MT2500A)
 - **nlbwmon:** Router bandwidth monitor that detects protocols by port/pattern

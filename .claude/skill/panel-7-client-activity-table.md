@@ -27,47 +27,22 @@
 
 ## Data Source
 
-### Prometheus Queries (4 metrics merged)
+### InfluxDB Flux Queries (4 metrics merged)
 
-**Query A - Download Bandwidth:**
+**Query A - Download Bandwidth**
+**Query B - Upload Bandwidth**
+**Query C - Active Connections**
+**Query D - DNS Queries**
 
-```promql
-sum by (device_name) (rate(client_bandwidth_bytes_total{direction="rx"}[$__range]) * 8)
-```
-
-Column name: "Download (bps)"
-
-**Query B - Upload Bandwidth:**
-
-```promql
-sum by (device_name) (rate(client_bandwidth_bytes_total{direction="tx"}[$__range]) * 8)
-```
-
-Column name: "Upload (bps)"
-
-**Query C - Active Connections:**
-
-```promql
-sum by (device_name) (client_connections_total)
-```
-
-Column name: "Connections"
-
-**Query D - DNS Queries:**
-
-```promql
-client_dns_queries_total{query_type="all"}
-```
-
-Column name: "DNS Queries"
+All use similar pattern with `group()` after aggregation to create single table per query.
 
 ### Metrics Used
 
 All 4 primary metrics combined:
 
-- `client_bandwidth_bytes_total` - Bandwidth by direction
-- `client_connections_total` - Active connection count
-- `client_dns_queries_total` - DNS query count
+- **InfluxDB:** `bandwidth` measurement - Download/upload bandwidth
+- **InfluxDB:** `connections` measurement - Active connection count
+- **InfluxDB:** `dns_query` measurement - DNS query count
 
 ### Data Collection Flow
 
@@ -75,10 +50,10 @@ All 4 primary metrics combined:
    - nlbwmon tracks bandwidth
    - Connection tracking via netstat/conntrack
    - dnsmasq logs DNS queries
-2. **Export Scripts:** Multiple scripts export different metrics
-3. **Lua Collectors:** Aggregate and export on port 9100
-4. **Prometheus:** Scrapes all metrics every 30 seconds
-5. **Grafana:** Merges 4 queries into single table view
+2. **Export Scripts:** Multiple scripts send events to InfluxDB
+3. **Telegraf:** Receives UDP packets on port 8094 (InfluxDB line protocol)
+4. **InfluxDB:** Stores all metrics in "network" bucket
+5. **Grafana:** Merges 4 Flux queries into single table view
 
 ## Current Configuration
 
@@ -317,11 +292,11 @@ Create investigation list based on risk:
 ## Files Referenced
 
 - **Dashboard JSON:** `grafana-dashboards/client-monitoring.json` (lines 236-337, Panel ID 7)
-- **Prometheus Config:** `prometheus.yml` (scrape config)
+- **Telegraf Config:** UDP listener on port 8094 for InfluxDB line protocol
 - **Router Export Scripts:** Multiple scripts on GL-MT2500A
-  - `/root/bin/export-client-bandwidth.sh` (bandwidth)
-  - `/root/bin/export-dns-queries.sh` (DNS)
-  - Connection tracking via system metrics
+  - `/root/bin/send-bandwidth-to-influx.sh` (bandwidth)
+  - `/root/bin/send-dns-to-influx.sh` (DNS)
+  - Connection tracking script sending to InfluxDB
 - **Lua Collectors:** Multiple collectors on router
 - **Device Registry:** `/root/etc/device-registry.conf` (device naming)
 - **Python Report:** `/Users/kirkl/bin/generate-client-report` (similar table structure)

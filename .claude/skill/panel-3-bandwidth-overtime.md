@@ -61,39 +61,27 @@ Without `group()`, findColumn only gets device from first table (single device b
 
 ## Data Source
 
-### Prometheus Queries
+### InfluxDB Flux Query
 
-**Query A - Download:**
-
-```promql
-topk(5, sum by (device_name) (rate(client_bandwidth_bytes_total{direction="rx"}[$__range]) * 8))
-```
-
-Legend: `{{device_name}} Download`
-
-**Query B - Upload (Negated for waterfall effect):**
-
-```promql
-topk(5, sum by (device_name) (rate(client_bandwidth_bytes_total{direction="tx"}[$__range]) * -8))
-```
-
-Legend: `{{device_name}} Upload`
-
-**Note:** Upload is multiplied by -8 to create a "waterfall" effect showing download above zero and upload below zero on the same graph.
+**Panel 3 (Download)** and **Panel 11 (Upload)** use security-focused scoring to select devices.
 
 ### Metrics Used
 
-- `client_bandwidth_bytes_total{direction="rx"}` - Download bytes
-- `client_bandwidth_bytes_total{direction="tx"}` - Upload bytes
-  - Labels: `device_name`, `ip`, `mac`, `protocol`, `direction`
-  - Type: Counter (cumulative)
+- **InfluxDB:** `bandwidth` measurement with `direction="rx"` or `direction="tx"` tags
+  - Tags: `device_name`, `ip`, `mac`, `protocol`, `direction`
+  - Field: `bytes` (integer - delta values sent every minute)
+  - Type: Event-based (deltas, not cumulative counters)
 
 ### Data Collection Flow
 
 1. **Router (GL-MT2500A):** nlbwmon tracks per-IP bandwidth by protocol
-2. **Export Script:** `/root/bin/export-client-bandwidth.sh` (runs ~19 seconds)
-3. **Lua Collector:** `/usr/lib/lua/prometheus-collectors/client_bandwidth.lua`
-4. **Prometheus:** Scrapes router:9100 every 30 seconds (25s timeout)
+   - **CRITICAL:** nlbwmon commit_interval MUST be 1 minute (not 24h) for real-time data
+2. **Export Script:** `/root/bin/send-bandwidth-to-influx.sh` (runs every minute via cron)
+   - Parses nlbwmon database with `nlbw -c show`
+   - Calculates deltas from previous run (only sends non-zero changes)
+   - Resolves device names via `/root/bin/resolve-device-name.sh`
+3. **Telegraf:** Receives UDP packets on port 8094 (InfluxDB line protocol)
+4. **InfluxDB:** Stores bandwidth events in "network" bucket
 5. **Grafana:** Queries time series data and visualizes with smooth lines
 
 ## Current Configuration
@@ -134,14 +122,7 @@ Legend: `{{device_name}} Upload`
 ### 1. Add Spike Annotations
 
 **What:** Automatically annotate significant bandwidth spikes (>3x previous 5-minute average)
-**How:** Add annotation query:
-
-```promql
-# Detect spikes
-rate(client_bandwidth_bytes_total{direction="rx"}[5m]) / rate(client_bandwidth_bytes_total{direction="rx"}[5m] offset 5m) > 3
-```
-
-Configure annotation to show device name and spike magnitude
+**How:** Add Flux annotation query to detect spikes by comparing current to previous intervals
 **Impact:** Instant visibility into what caused bandwidth changes
 
 ### 2. Add Off-Hours Overlay
@@ -153,12 +134,7 @@ Configure annotation to show device name and spike magnitude
 ### 3. Add Baseline Comparison Line
 
 **What:** Overlay 7-day average bandwidth as reference line
-**How:** Add Query C:
-
-```promql
-avg_over_time(sum by (device_name) (rate(client_bandwidth_bytes_total{direction="rx"}[5m]) * 8)[7d:5m])
-```
-
+**How:** Add Flux query to calculate rolling 7-day average for comparison
 Display as dashed line labeled "7-day average"
 **Impact:** See if current usage is within normal range
 
@@ -279,7 +255,6 @@ When you see unusual patterns in bandwidth over time:
 ## Files Referenced
 
 - **Dashboard JSON:** `grafana-dashboards/client-monitoring.json` (lines 96-128, Panel ID 3)
-- **Prometheus Config:** `prometheus.yml` (scrape config)
-- **Router Export Script:** `/root/bin/export-client-bandwidth.sh` (on GL-MT2500A)
-- **Lua Collector:** `/usr/lib/lua/prometheus-collectors/client_bandwidth.lua` (on router)
+- **Telegraf Config:** UDP listener on port 8094 for InfluxDB line protocol
+- **Router Export Script:** `/root/bin/send-bandwidth-to-influx.sh` (on GL-MT2500A)
 - **Device Registry:** `/root/etc/device-registry.conf` (on router)
