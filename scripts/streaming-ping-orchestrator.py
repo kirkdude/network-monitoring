@@ -205,7 +205,8 @@ def ping_host(host):
     except subprocess.TimeoutExpired:
         sys.stderr.write(f"WARNING: Ping to {host} timed out\n")
         sys.stderr.flush()
-        # Return the default failure metrics
+        # Return the default failure metrics to ensure timeouts are recorded
+        return metrics
     except Exception as e:
         sys.stderr.write(f"ERROR pinging {host}: {e}\n")
         sys.stderr.flush()
