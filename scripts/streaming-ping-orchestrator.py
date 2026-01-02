@@ -152,6 +152,7 @@ def ping_host(host):
             capture_output=True,
             text=True,
             timeout=15,
+            env={"LC_ALL": "C"},
         )
 
         output = result.stdout
@@ -204,8 +205,6 @@ def output_line_protocol(metrics_list):
     Args:
         metrics_list (list): List of metric dictionaries from ping_host()
     """
-    timestamp_ns = int(time.time() * 1e9)
-
     for metrics in metrics_list:
         if metrics is None:
             continue
@@ -226,8 +225,9 @@ def output_line_protocol(metrics_list):
             f'ttl={metrics["ttl"]}i',
         ]
 
-        # Output line protocol: measurement,tags fields timestamp
-        line = f'ping,{tags} {",".join(fields)} {timestamp_ns}'
+        # Output line protocol: measurement,tags fields
+        # Telegraf will add the timestamp upon ingestion
+        line = f'ping,{tags} {",".join(fields)}'
         print(line)
         sys.stdout.flush()
 
