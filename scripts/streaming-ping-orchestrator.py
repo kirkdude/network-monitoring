@@ -95,21 +95,15 @@ from(bucket: "{INFLUXDB_BUCKET}")
   |> group(columns: ["ip"])
   |> sum()
   |> filter(fn: (r) => r._value > {BANDWIDTH_THRESHOLD})
+  |> group()
   |> limit(n: 1)
-  |> count()
 """
 
     try:
         result = client.query_api().query(query, org=INFLUXDB_ORG)
 
-        # Check if any device has bandwidth above threshold
-        for table in result:
-            for record in table.records:
-                if record.get_value() > 0:
-                    # At least one device is streaming
-                    return True
-
-        return False
+        # If the query returns any tables, at least one device is streaming
+        return len(result) > 0
 
     except Exception as e:
         sys.stderr.write(f"ERROR querying InfluxDB: {e}\n")
