@@ -145,7 +145,7 @@ def ping_host(host):
     # Initialize metrics with defaults for failure
     metrics = {
         "url": host,
-        "packets_transmitted": PING_COUNT,
+        "packets_transmitted": 0,
         "packets_received": 0,
         "percent_packet_loss": 100.0,
         "minimum_response_ms": 0.0,
