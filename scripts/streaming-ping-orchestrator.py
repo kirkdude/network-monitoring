@@ -38,7 +38,12 @@ INFLUXDB_ORG = os.getenv("INFLUXDB_ORG", "home")
 INFLUXDB_BUCKET = os.getenv("INFLUXDB_BUCKET", "network")
 
 # Streaming device IPs (LG TV, Roku TV, Apple TV)
-STREAMING_DEVICES = ["192.168.1.70", "192.168.1.95", "192.168.1.109"]
+STREAMING_DEVICES_STR = os.getenv(
+    "STREAMING_DEVICES", "192.168.1.70,192.168.1.95,192.168.1.109"
+)
+STREAMING_DEVICES = [
+    ip.strip() for ip in STREAMING_DEVICES_STR.split(",") if ip.strip()
+]
 
 # CDN hosts to ping
 CDN_HOSTS = [
@@ -76,8 +81,10 @@ from(bucket: "{INFLUXDB_BUCKET}")
       r.direction == "rx" and
       ({device_filter})
   )
-  |> aggregateWindow(every: 60s, fn: sum, createEmpty: false)
+  |> group(columns: ["ip"])
+  |> sum()
   |> filter(fn: (r) => r._value > {BANDWIDTH_THRESHOLD})
+  |> limit(n: 1)
   |> count()
 """
 
@@ -108,8 +115,22 @@ def ping_host(host):
         host (str): Hostname or IP to ping
 
     Returns:
-        dict: Ping metrics or None if ping failed
+        dict: Ping metrics or None if a critical error occurs.
     """
+    # Initialize metrics with defaults for failure
+    metrics = {
+        "url": host,
+        "packets_transmitted": PING_COUNT,
+        "packets_received": 0,
+        "percent_packet_loss": 100.0,
+        "minimum_response_ms": 0.0,
+        "average_response_ms": 0.0,
+        "maximum_response_ms": 0.0,
+        "standard_deviation_ms": 0.0,
+        "ttl": 0,
+        "result_code": 2,  # 2 = timeout/failure
+    }
+
     try:
         # Execute ping: 5 packets, 0.5s interval, 5s timeout
         result = subprocess.run(  # nosec B603, B607
@@ -129,20 +150,6 @@ def ping_host(host):
         )
 
         output = result.stdout
-
-        # Initialize metrics with defaults
-        metrics = {
-            "url": host,
-            "packets_transmitted": PING_COUNT,
-            "packets_received": 0,
-            "percent_packet_loss": 100.0,
-            "minimum_response_ms": 0.0,
-            "average_response_ms": 0.0,
-            "maximum_response_ms": 0.0,
-            "standard_deviation_ms": 0.0,
-            "ttl": 0,
-            "result_code": 2,  # 2 = timeout
-        }
 
         # Parse packet statistics
         # Example: "5 packets transmitted, 3 received, 40% packet loss"
@@ -173,28 +180,16 @@ def ping_host(host):
         if ttl_match:
             metrics["ttl"] = int(ttl_match.group(1))
 
-        return metrics
-
     except subprocess.TimeoutExpired:
         sys.stderr.write(f"WARNING: Ping to {host} timed out\n")
         sys.stderr.flush()
-        return {
-            "url": host,
-            "packets_transmitted": PING_COUNT,
-            "packets_received": 0,
-            "percent_packet_loss": 100.0,
-            "minimum_response_ms": 0.0,
-            "average_response_ms": 0.0,
-            "maximum_response_ms": 0.0,
-            "standard_deviation_ms": 0.0,
-            "ttl": 0,
-            "result_code": 2,
-        }
-
+        # Return the default failure metrics
     except Exception as e:
         sys.stderr.write(f"ERROR pinging {host}: {e}\n")
         sys.stderr.flush()
         return None
+
+    return metrics
 
 
 def output_line_protocol(metrics_list):
