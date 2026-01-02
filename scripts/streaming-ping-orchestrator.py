@@ -17,6 +17,7 @@ Date: 2026-01-01
 """
 
 import os
+import shutil
 import sys
 import time
 import subprocess  # nosec B404
@@ -62,6 +63,12 @@ CHECK_INTERVAL = 30  # seconds between streaming checks
 # Bandwidth threshold (1 MB in 60 seconds = ~8 Mbps)
 BANDWIDTH_THRESHOLD = 1_000_000
 
+# Resolve ping executable path at startup for security (CWE-78)
+PING_EXECUTABLE = shutil.which("ping")
+if not PING_EXECUTABLE:
+    sys.stderr.write("ERROR: 'ping' executable not found in PATH\n")
+    sys.exit(1)
+
 
 def is_streaming_active(client):
     """
@@ -70,6 +77,10 @@ def is_streaming_active(client):
     Returns:
         bool: True if streaming detected, False otherwise
     """
+    # Return early if no devices configured to avoid Flux syntax error
+    if not STREAMING_DEVICES:
+        return False
+
     # Build Flux query to check bandwidth in last 60 seconds
     device_filter = " or ".join([f'r.ip == "{ip}"' for ip in STREAMING_DEVICES])
 
@@ -133,9 +144,9 @@ def ping_host(host):
 
     try:
         # Execute ping: 5 packets, 0.5s interval, 5s timeout
-        result = subprocess.run(  # nosec B603, B607
+        result = subprocess.run(  # nosec B603
             [
-                "ping",
+                PING_EXECUTABLE,
                 "-c",
                 str(PING_COUNT),
                 "-i",
