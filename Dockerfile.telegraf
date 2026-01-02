@@ -1,5 +1,4 @@
-# hadolint ignore=DL3007
-FROM telegraf:latest
+FROM telegraf:1.32
 
 # Install Python dependencies for streaming-ping-orchestrator
 # hadolint ignore=DL3008,DL3013,DL3042

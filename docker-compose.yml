@@ -69,6 +69,8 @@ services:
     volumes:
       - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
       - ./scripts:/scripts:ro
+    environment:
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
     depends_on:
       - influxdb
     networks:

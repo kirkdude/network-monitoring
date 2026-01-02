@@ -19,6 +19,7 @@ Date: 2026-01-01
 import ipaddress
 import os
 import shutil
+import signal
 import sys
 import time
 import subprocess  # nosec B404
@@ -274,6 +275,15 @@ def main():
     except Exception as e:
         sys.stderr.write(f"ERROR initializing InfluxDB client: {e}\n")
         sys.exit(1)
+
+    # Signal handler for graceful shutdown (SIGTERM from Telegraf)
+    def shutdown_handler(signum, frame):
+        """Handle shutdown signals by raising KeyboardInterrupt to exit loop."""
+        sys.stderr.write(f"Signal {signum} received, shutting down...\n")
+        sys.stderr.flush()
+        raise KeyboardInterrupt
+
+    signal.signal(signal.SIGTERM, shutdown_handler)
 
     # Main loop with try...finally for proper resource cleanup
     try:
