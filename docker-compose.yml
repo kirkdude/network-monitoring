@@ -58,7 +58,9 @@ services:
       - monitoring
 
   telegraf:
-    image: telegraf:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.telegraf
     container_name: telegraf
     restart: unless-stopped
     user: "0:0"
@@ -66,6 +68,7 @@ services:
       - "8094:8094/udp"
     volumes:
       - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - ./scripts:/scripts:ro
     depends_on:
       - influxdb
     networks:
