@@ -7,7 +7,7 @@ hosts only when streaming devices are actively streaming (>1 Mbps bandwidth).
 
 Behavior:
 - Queries InfluxDB every 30 seconds for bandwidth data
-- Detects streaming: LG TV, Roku TV, or Apple TV with >1 MB in last 60s
+- Detects streaming: LG TV, Roku TV, or Apple TV with >1 Mbps in last 60s
 - If streaming detected: pings Netflix, YouTube, Amazon, Cloudflare (5 pings each)
 - If no streaming: skips pings (silent, no network traffic)
 - Outputs InfluxDB line protocol to stdout for Telegraf ingestion
@@ -71,8 +71,8 @@ PING_INTERVAL = 0.5  # seconds between pings
 PING_TIMEOUT = 5  # seconds
 CHECK_INTERVAL = 30  # seconds between streaming checks
 
-# Bandwidth threshold (1 MB in 60 seconds = ~8 Mbps)
-BANDWIDTH_THRESHOLD = 1_000_000
+# Bandwidth threshold (1 Mbps = 7,500,000 bytes over 60s)
+BANDWIDTH_THRESHOLD = 7_500_000
 
 # Resolve ping executable path at startup for security (CWE-78)
 PING_EXECUTABLE = shutil.which("ping")
