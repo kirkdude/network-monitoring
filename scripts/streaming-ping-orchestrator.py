@@ -208,7 +208,8 @@ def ping_host(host):
     except Exception as e:
         sys.stderr.write(f"ERROR pinging {host}: {e}\n")
         sys.stderr.flush()
-        return None
+        # Return failure metrics for consistent observability
+        return metrics
 
     return metrics
 
@@ -224,8 +225,11 @@ def output_line_protocol(metrics_list):
         if metrics is None:
             continue
 
-        # Build tags
-        tags = f'host=network-monitoring,url={metrics["url"]}'
+        # Build tags (escape special characters per line protocol spec)
+        escaped_url = (
+            metrics["url"].replace(",", "\\,").replace("=", "\\=").replace(" ", "\\ ")
+        )
+        tags = f"host=network-monitoring,url={escaped_url}"
 
         # Build fields
         fields = [
@@ -271,47 +275,50 @@ def main():
         sys.stderr.write(f"ERROR initializing InfluxDB client: {e}\n")
         sys.exit(1)
 
-    # Main loop
-    while True:
-        try:
-            # Check if streaming is active
-            streaming = is_streaming_active(client)
+    # Main loop with try...finally for proper resource cleanup
+    try:
+        while True:
+            try:
+                # Check if streaming is active
+                streaming = is_streaming_active(client)
 
-            if streaming:
-                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                sys.stderr.write(f"[{timestamp}] Streaming detected - pinging CDNs\n")
+                if streaming:
+                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    sys.stderr.write(
+                        f"[{timestamp}] Streaming detected - pinging CDNs\n"
+                    )
+                    sys.stderr.flush()
+
+                    # Ping all CDNs
+                    metrics_list = []
+                    for cdn in CDN_HOSTS:
+                        metrics = ping_host(cdn)
+                        if metrics:
+                            metrics_list.append(metrics)
+
+                    # Output line protocol to stdout (Telegraf ingests this)
+                    if metrics_list:
+                        output_line_protocol(metrics_list)
+                else:
+                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    sys.stderr.write(
+                        f"[{timestamp}] No streaming detected - skipping pings\n"
+                    )
+                    sys.stderr.flush()
+
+            except KeyboardInterrupt:
+                sys.stderr.write("Shutting down...\n")
+                break
+
+            except Exception as e:
+                sys.stderr.write(f"ERROR in main loop: {e}\n")
                 sys.stderr.flush()
 
-                # Ping all CDNs
-                metrics_list = []
-                for cdn in CDN_HOSTS:
-                    metrics = ping_host(cdn)
-                    if metrics:
-                        metrics_list.append(metrics)
-
-                # Output line protocol to stdout (Telegraf ingests this)
-                if metrics_list:
-                    output_line_protocol(metrics_list)
-            else:
-                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                sys.stderr.write(
-                    f"[{timestamp}] No streaming detected - skipping pings\n"
-                )
-                sys.stderr.flush()
-
-        except KeyboardInterrupt:
-            sys.stderr.write("Shutting down...\n")
-            break
-
-        except Exception as e:
-            sys.stderr.write(f"ERROR in main loop: {e}\n")
-            sys.stderr.flush()
-
-        # Wait before next check
-        time.sleep(CHECK_INTERVAL)
-
-    # Cleanup
-    client.close()
+            # Wait before next check
+            time.sleep(CHECK_INTERVAL)
+    finally:
+        # Cleanup - always close the client
+        client.close()
 
 
 if __name__ == "__main__":

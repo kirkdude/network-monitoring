@@ -297,6 +297,5 @@ Create investigation list based on risk:
   - `/root/bin/send-bandwidth-to-influx.sh` (bandwidth)
   - `/root/bin/send-dns-to-influx.sh` (DNS)
   - Connection tracking script sending to InfluxDB
-- **Lua Collectors:** Multiple collectors on router
 - **Device Registry:** `/root/etc/device-registry.conf` (device naming)
 - **Python Report:** `/Users/kirkl/bin/generate-client-report` (similar table structure)
