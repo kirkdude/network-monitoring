@@ -271,6 +271,7 @@
     {
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.protocol}",
           "unit": "Bps"
         }
       },
