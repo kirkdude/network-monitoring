@@ -9,30 +9,33 @@
   ],
   "panels": [
     {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "P951FEA4DE68E13C5"
+      },
       "fieldConfig": {
         "defaults": {
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": 0
-              }
-            ]
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
+            }
           }
         }
       },
       "gridPos": {
-        "h": 4,
+        "h": 3,
         "w": 24,
         "x": 0,
         "y": 0
       },
       "id": 1,
       "options": {
-        "graphMode": "none",
-        "textMode": "value"
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
       },
       "targets": [
         {
@@ -40,12 +43,12 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bandwidth\")\n  |> filter(fn: (r) => r.device_name == \"${device}\")\n  |> drop(columns: [\"_time\"])\n  |> group(columns: [\"direction\"])\n  |> sum()\n  |> map(fn: (r) => ({\n      r with\n      _value: float(v: r._value) * 8.0 / (float(v: uint(v: v.timeRangeStop) - uint(v: v.timeRangeStart)) / 1000000000.0)\n    }))\n  |> group()",
+          "query": "import \"strings\"\nimport \"array\"\n\ndata = from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bandwidth\")\n  |> filter(fn: (r) => r.device_name == \"${device}\")\n\nip_val = data |> first() |> findColumn(fn: (key) => true, column: \"ip\")\nmac_val = data |> first() |> findColumn(fn: (key) => true, column: \"mac\")\nfirst_seen = data |> group() |> first() |> findColumn(fn: (key) => true, column: \"_time\")\nlast_seen = data |> group() |> last() |> findColumn(fn: (key) => true, column: \"_time\")\nprotocols = data |> distinct(column: \"protocol\") |> findColumn(fn: (key) => true, column: \"protocol\")\n\narray.from(rows: [{\n  \"Device\": \"${device}\",\n  \"IP Address\": if length(arr: ip_val) > 0 then ip_val[0] else \"unknown\",\n  \"MAC Address\": if length(arr: mac_val) > 0 then mac_val[0] else \"unknown\",\n  \"First Seen\": if length(arr: first_seen) > 0 then string(v: first_seen[0]) else \"unknown\",\n  \"Last Seen\": if length(arr: last_seen) > 0 then string(v: last_seen[0]) else \"unknown\",\n  \"Protocols\": strings.joinStr(arr: protocols, v: \", \")\n}])",
           "refId": "A"
         }
       ],
       "title": "Device Information",
-      "type": "stat"
+      "type": "table"
     },
     {
       "fieldConfig": {
@@ -473,7 +476,7 @@
         "name": "device",
         "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n  bucket: \"network\",\n  tag: \"device_name\",\n  predicate: (r) => r._measurement == \"bandwidth\",\n  start: -24h\n)",
         "refresh": 1,
-        "regex": "",
+        "regex": "/^(?!GL-iNet_Router|Router_DNS|unknown|localhost).*/",
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
