@@ -309,9 +309,13 @@
       "type": "piechart"
     },
     {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "P951FEA4DE68E13C5"
+      },
       "fieldConfig": {
         "defaults": {
-          "decimals": 0,
+          "displayName": "${__field.labels.domain}",
           "unit": "short"
         }
       },
@@ -323,8 +327,14 @@
       },
       "id": 8,
       "options": {
-        "colorMode": "background",
-        "graphMode": "area"
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showUnfilled": true
       },
       "targets": [
         {
@@ -332,20 +342,12 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dns_query\")\n  |> filter(fn: (r) => r.device_name == \"${device}\")\n  |> count()",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dns_query\" and r._field == \"domain\")\n  |> filter(fn: (r) => r.device_name == \"${device}\")\n  |> map(fn: (r) => ({r with domain: r._value}))\n  |> group(columns: [\"domain\"])\n  |> count()\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n  |> limit(n: ${top_destinations})",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
-          },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dns_query\" and r._field == \"domain\")\n  |> filter(fn: (r) => r.device_name == \"${device}\")\n  |> distinct(column: \"_value\")\n  |> count()",
-          "refId": "B"
         }
       ],
-      "title": "DNS Activity",
-      "type": "stat"
+      "title": "Top DNS Queries",
+      "type": "bargauge"
     },
     {
       "datasource": {
@@ -392,6 +394,7 @@
       },
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.destination}",
           "unit": "short"
         }
       },
@@ -419,6 +422,20 @@
         }
       ],
       "title": "Top Destination IPs",
+      "transformations": [
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [
+              {
+                "desc": true,
+                "field": "Value"
+              }
+            ]
+          }
+        }
+      ],
       "type": "bargauge"
     },
     {
@@ -484,48 +501,48 @@
       {
         "current": {
           "selected": true,
-          "text": "20",
+          "text": "Show Top 20",
           "value": "20"
         },
         "hide": 0,
         "includeAll": false,
-        "label": "Show Top N Destinations",
+        "label": "",
         "multi": false,
         "name": "top_destinations",
         "options": [
           {
             "selected": false,
-            "text": "5",
+            "text": "Show Top 5",
             "value": "5"
           },
           {
             "selected": false,
-            "text": "10",
+            "text": "Show Top 10",
             "value": "10"
           },
           {
             "selected": false,
-            "text": "15",
+            "text": "Show Top 15",
             "value": "15"
           },
           {
             "selected": true,
-            "text": "20",
+            "text": "Show Top 20",
             "value": "20"
           },
           {
             "selected": false,
-            "text": "30",
+            "text": "Show Top 30",
             "value": "30"
           },
           {
             "selected": false,
-            "text": "50",
+            "text": "Show Top 50",
             "value": "50"
           },
           {
             "selected": false,
-            "text": "100",
+            "text": "Show Top 100",
             "value": "100"
           }
         ],
