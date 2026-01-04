@@ -355,7 +355,8 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "text": {}
       },
       "targets": [
         {
@@ -363,8 +364,16 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"cpu_user\" or r._field == \"cpu_system\" or r._field == \"cpu_total\")\n  |> last()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with _value: float(v: r.cpu_user + r.cpu_system) / float(v: r.cpu_total) * 100.0}))\n  |> keep(columns: [\"_time\", \"_value\", \"device\"])",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"cpu_user\" or r._field == \"cpu_system\" or r._field == \"cpu_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.cpu_user + r.cpu_system) / float(v: r.cpu_total) * 100.0}))\n  |> mean()\n  |> rename(columns: {_value: \"Average\"})",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"cpu_user\" or r._field == \"cpu_system\" or r._field == \"cpu_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.cpu_user + r.cpu_system) / float(v: r.cpu_total) * 100.0}))\n  |> max()\n  |> rename(columns: {_value: \"Peak\"})",
+          "refId": "B"
         }
       ],
       "title": "CPU Usage",
@@ -420,8 +429,16 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"mem_used\" or r._field == \"mem_total\")\n  |> last()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with _value: float(v: r.mem_used) / float(v: r.mem_total) * 100.0}))",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"mem_used\" or r._field == \"mem_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.mem_used) / float(v: r.mem_total) * 100.0}))\n  |> mean()\n  |> rename(columns: {_value: \"Average\"})",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"mem_used\" or r._field == \"mem_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.mem_used) / float(v: r.mem_total) * 100.0}))\n  |> max()\n  |> rename(columns: {_value: \"Peak\"})",
+          "refId": "B"
         }
       ],
       "title": "Memory Usage",
@@ -458,9 +475,6 @@
       },
       "id": 7,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -469,7 +483,8 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
       },
       "targets": [
         {
@@ -477,7 +492,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\" and r.interface == \"wan\")\n  |> filter(fn: (r) => r._field == \"rx_rate\")\n  |> last()\n  |> map(fn: (r) => ({r with _field: \"Download\"}))",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\" and r.interface == \"wan\")\n  |> filter(fn: (r) => r._field == \"rx_rate\")\n  |> mean()\n  |> rename(columns: {_value: \"Download Avg\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\", \"device\", \"host\", \"interface\"])",
           "refId": "A"
         },
         {
@@ -485,12 +500,28 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\" and r.interface == \"wan\")\n  |> filter(fn: (r) => r._field == \"tx_rate\")\n  |> last()\n  |> map(fn: (r) => ({r with _field: \"Upload\"}))",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\" and r.interface == \"wan\")\n  |> filter(fn: (r) => r._field == \"rx_rate\")\n  |> max()\n  |> rename(columns: {_value: \"Download Peak\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\", \"device\", \"host\", \"interface\"])",
           "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\" and r.interface == \"wan\")\n  |> filter(fn: (r) => r._field == \"tx_rate\")\n  |> mean()\n  |> rename(columns: {_value: \"Upload Avg\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\", \"device\", \"host\", \"interface\"])",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\" and r.interface == \"wan\")\n  |> filter(fn: (r) => r._field == \"tx_rate\")\n  |> max()\n  |> rename(columns: {_value: \"Upload Peak\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\", \"device\", \"host\", \"interface\"])",
+          "refId": "D"
         }
       ],
       "title": "WAN Throughput",
-      "type": "stat"
+      "type": "gauge"
     },
     {
       "fieldConfig": {
