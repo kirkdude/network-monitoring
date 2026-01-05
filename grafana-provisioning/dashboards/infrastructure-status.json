@@ -364,7 +364,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"cpu_user\" or r._field == \"cpu_system\" or r._field == \"cpu_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.cpu_user + r.cpu_system) / float(v: r.cpu_total) * 100.0}))\n  |> mean()\n  |> rename(columns: {_value: \"Average\"})",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"cpu_user\" or r._field == \"cpu_system\" or r._field == \"cpu_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => exists r.cpu_user and exists r.cpu_system and exists r.cpu_total and r.cpu_total > 0.0)\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.cpu_user + r.cpu_system) / float(v: r.cpu_total) * 100.0}))\n  |> mean()\n  |> rename(columns: {_value: \"Average\"})",
           "refId": "A"
         },
         {
@@ -372,7 +372,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"cpu_user\" or r._field == \"cpu_system\" or r._field == \"cpu_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.cpu_user + r.cpu_system) / float(v: r.cpu_total) * 100.0}))\n  |> max()\n  |> rename(columns: {_value: \"Peak\"})",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"cpu_user\" or r._field == \"cpu_system\" or r._field == \"cpu_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => exists r.cpu_user and exists r.cpu_system and exists r.cpu_total and r.cpu_total > 0.0)\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.cpu_user + r.cpu_system) / float(v: r.cpu_total) * 100.0}))\n  |> max()\n  |> rename(columns: {_value: \"Peak\"})",
           "refId": "B"
         }
       ],
@@ -429,7 +429,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"mem_used\" or r._field == \"mem_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.mem_used) / float(v: r.mem_total) * 100.0}))\n  |> mean()\n  |> rename(columns: {_value: \"Average\"})",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"mem_used\" or r._field == \"mem_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => exists r.mem_used and exists r.mem_total and r.mem_total > 0.0)\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.mem_used) / float(v: r.mem_total) * 100.0}))\n  |> mean()\n  |> rename(columns: {_value: \"Average\"})",
           "refId": "A"
         },
         {
@@ -437,7 +437,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"mem_used\" or r._field == \"mem_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.mem_used) / float(v: r.mem_total) * 100.0}))\n  |> max()\n  |> rename(columns: {_value: \"Peak\"})",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"mem_used\" or r._field == \"mem_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => exists r.mem_used and exists r.mem_total and r.mem_total > 0.0)\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.mem_used) / float(v: r.mem_total) * 100.0}))\n  |> max()\n  |> rename(columns: {_value: \"Peak\"})",
           "refId": "B"
         }
       ],
@@ -677,7 +677,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"ping\" and r.type == \"infrastructure\")\n  |> filter(fn: (r) => r._field == \"average_response_ms\")\n  |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.url == \"192.168.1.2\" then \"GLMT2500A\" else \"Starlink\"}))",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"ping\" and r.type == \"infrastructure\")\n  |> filter(fn: (r) => r.url == \"192.168.1.2\" or r.url == \"192.168.2.1\")\n  |> filter(fn: (r) => r._field == \"average_response_ms\")\n  |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.url == \"192.168.1.2\" then \"GLMT2500A\" else \"Starlink\"}))",
           "refId": "A"
         }
       ],
@@ -841,7 +841,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"ping\")\n  |> filter(fn: (r) => r.type == \"infrastructure\" or r.type == \"wan_health\")\n  |> filter(fn: (r) => r._field == \"percent_packet_loss\")\n  |> aggregateWindow(every: 5m, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.url == \"192.168.1.2\" then \"GLMT\" else if r.url == \"192.168.2.1\" then \"Starlink\" else if r.url == \"8.8.8.8\" then \"Google\" else \"Cloudflare\"}))",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"ping\")\n  |> filter(fn: (r) => r.type == \"infrastructure\" or r.type == \"wan_health\")\n  |> filter(fn: (r) => r._field == \"percent_packet_loss\")\n  |> aggregateWindow(every: 5m, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.url == \"192.168.1.2\" then \"GLMT\" else if r.url == \"192.168.2.1\" then \"Starlink\" else if r.url == \"8.8.8.8\" then \"Google\" else if r.url == \"192.168.100.1\" then \"Starlink Dishy\" else if r.url == \"1.1.1.1\" then \"Cloudflare\" else \"Unknown\"}))",
           "refId": "A"
         }
       ],
@@ -900,7 +900,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"ping\")\n  |> filter(fn: (r) => r.type == \"infrastructure\" or r.type == \"wan_health\")\n  |> filter(fn: (r) => r._field == \"standard_deviation_ms\")\n  |> aggregateWindow(every: 5m, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.url == \"192.168.1.2\" then \"GLMT\" else if r.url == \"192.168.2.1\" then \"Starlink\" else if r.url == \"8.8.8.8\" then \"Google\" else \"Cloudflare\"}))",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"ping\")\n  |> filter(fn: (r) => r.type == \"infrastructure\" or r.type == \"wan_health\")\n  |> filter(fn: (r) => r._field == \"standard_deviation_ms\")\n  |> aggregateWindow(every: 5m, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.url == \"192.168.1.2\" then \"GLMT\" else if r.url == \"192.168.2.1\" then \"Starlink\" else if r.url == \"8.8.8.8\" then \"Google\" else if r.url == \"192.168.100.1\" then \"Starlink Dishy\" else if r.url == \"1.1.1.1\" then \"Cloudflare\" else \"Unknown\"}))",
           "refId": "A"
         }
       ],
