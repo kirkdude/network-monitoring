@@ -96,7 +96,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bandwidth\" and r.direction == \"rx\")\n  |> drop(columns: [\"_time\"])\n  |> group(columns: [\"device_name\"])\n  |> sum(column: \"_value\")\n  |> group()\n  |> map(fn: (r) => ({ device_name: r.device_name, _value: float(v: r._value) * 8.0 / (float(v: uint(v: v.timeRangeStop) - uint(v: v.timeRangeStart)) / 1000000000.0) }))\n  |> sort(columns: [\"_value\"], desc: true)\n  |> limit(n: ${top_n})",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bandwidth\" and r.direction == \"rx\")\n  |> filter(fn: (r) => r.device_name !~ /^(GL-iNet_Router.*|Router_DNS|localhost)$/)\n  |> drop(columns: [\"_time\"])\n  |> group(columns: [\"device_name\"])\n  |> sum(column: \"_value\")\n  |> group()\n  |> map(fn: (r) => ({ device_name: r.device_name, _value: float(v: r._value) * 8.0 / (float(v: uint(v: v.timeRangeStop) - uint(v: v.timeRangeStart)) / 1000000000.0) }))\n  |> sort(columns: [\"_value\"], desc: true)\n  |> limit(n: ${top_n})",
           "refId": "A"
         }
       ],
@@ -217,7 +217,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bandwidth\" and r.direction == \"tx\")\n  |> drop(columns: [\"_time\"])\n  |> group(columns: [\"device_name\"])\n  |> sum(column: \"_value\")\n  |> group()\n  |> map(fn: (r) => ({ device_name: r.device_name, _value: float(v: r._value) * 8.0 / (float(v: uint(v: v.timeRangeStop) - uint(v: v.timeRangeStart)) / 1000000000.0) }))\n  |> sort(columns: [\"_value\"], desc: true)\n  |> limit(n: ${top_n})",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bandwidth\" and r.direction == \"tx\")\n  |> filter(fn: (r) => r.device_name !~ /^(GL-iNet_Router.*|Router_DNS|localhost)$/)\n  |> drop(columns: [\"_time\"])\n  |> group(columns: [\"device_name\"])\n  |> sum(column: \"_value\")\n  |> group()\n  |> map(fn: (r) => ({ device_name: r.device_name, _value: float(v: r._value) * 8.0 / (float(v: uint(v: v.timeRangeStop) - uint(v: v.timeRangeStart)) / 1000000000.0) }))\n  |> sort(columns: [\"_value\"], desc: true)\n  |> limit(n: ${top_n})",
           "refId": "A"
         }
       ],
