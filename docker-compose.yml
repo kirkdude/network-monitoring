@@ -66,6 +66,8 @@ services:
       - "8094:8094/udp"
     volumes:
       - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - ./scripts:/scripts:ro
+      - ~/.ssh:/root/.ssh:ro
     depends_on:
       - influxdb
     networks:
@@ -73,8 +75,18 @@ services:
     cap_add:
       - NET_RAW
       - NET_ADMIN
-    entrypoint: ["/usr/bin/telegraf"]
-    command: ["--config", "/etc/telegraf/telegraf.conf"]
+    environment:
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_ORG=home
+      - INFLUXDB_BUCKET=network
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        apt-get update -qq &&
+        apt-get install -y -qq python3 python3-pip iputils-ping openssh-client &&
+        pip3 install --break-system-packages --no-cache-dir influxdb-client netmiko &&
+        /usr/bin/telegraf --config /etc/telegraf/telegraf.conf
 
   ntopng:
     image: ntop/ntopng:latest

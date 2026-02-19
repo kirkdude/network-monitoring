@@ -38,7 +38,7 @@ Your network monitoring system uses a hybrid device identification approach:
    - Type `:wq`
    - Press `ENTER`
 
-5. **Wait 30 seconds** for next Prometheus scrape
+5. **Wait 60 seconds** for next Telegraf collection cycle
 
 6. **Check Grafana dashboard** - device should show new name
 
@@ -164,11 +164,9 @@ bb:7a:53:xx:xx:xx=Bedroom Roku TV
 
    Should output: `Living Room LG TV` (if you added it)
 
-2. **From Prometheus:**
+2. **From InfluxDB (via Grafana):**
 
-   ```bash
-   curl http://192.168.1.2:9100/metrics | grep 'device_name="Living Room LG TV"'
-   ```
+   Open any dashboard and search for "Living Room LG TV" in the device dropdown
 
 3. **From Grafana:**
    - Open: <http://localhost:3000/d/14cf33bf-29ea-41cd-9447-28e5e92b18f1/all-network-devices>
@@ -202,9 +200,9 @@ ssh root@192.168.1.2 "/root/bin/resolve-device-name.sh 'IP' 'MAC'"
 
 ### Device Shows Old Name
 
-- Wait 30 seconds for next Prometheus scrape
+- Wait 60 seconds for next Telegraf collection cycle
 - Force Grafana dashboard refresh (Ctrl+R or Cmd+R)
-- Check Prometheus target is UP: <http://localhost:9090/targets>
+- Check Telegraf is running: `podman logs telegraf | tail -20`
 
 ### Changes Not Persisting After Router Reboot
 

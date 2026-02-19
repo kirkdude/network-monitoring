@@ -21,10 +21,11 @@ default_language_version:
 repos:
   # Dockerfile Linting
   # Lints Dockerfiles to ensure they adhere to best practices.
-  - repo: https://github.com/petalmd/dockerfile-pre-commit
-    rev: v1.0
-    hooks:
-      - id: dockerlint
+  # Docker-dependent (skipped when Docker not running)
+  # - repo: https://github.com/petalmd/dockerfile-pre-commit
+  #   rev: v1.0
+  #   hooks:
+  #     - id: dockerlint
 
   # Python Code Formatting
   # Automatically formats Python code to conform to the PEP 8 style guide.
@@ -183,12 +184,13 @@ repos:
 
 
   # Check JAVA
-  - repo: https://github.com/gherynos/pre-commit-java.git
-    rev: v0.6.21
-    hooks:
-      - id: pmd
-      - id: cpd
-      - id: checkstyle
+  # Docker-dependent (skipped when Docker not running)
+  # - repo: https://github.com/gherynos/pre-commit-java.git
+  #   rev: v0.6.21
+  #   hooks:
+  #     - id: pmd
+  #     - id: cpd
+  #     - id: checkstyle
 
   # Check pre-commit was run
   - repo: https://gitlab.com/adam-moss/pre-commit-trailer.git

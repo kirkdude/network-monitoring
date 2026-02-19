@@ -40,3 +40,16 @@ Thumbs.db
 
 # Serena MCP server cache
 .serena/cache/
+
+# Backup files
+*.bak
+*.bak[0-9]
+*.backup-*
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Secrets
+.env

@@ -6,20 +6,28 @@ Pure InfluxDB event-based monitoring for home network with real-time data collec
 
 ## Architecture
 
+**Pure InfluxDB Stack** - No Prometheus server. We migrated from Prometheus to InfluxDB to fix time-range filtering issues.
+
 ```
-Router (OpenWrt)          Mac Mini (192.168.1.126)
-================          =========================
-DNS queries  ─────────┐
-Connections  ─────────┼──UDP:8094──► Telegraf ──► InfluxDB ──► Grafana
-Bandwidth    ─────────┘               (line protocol)
+Router (GL-MT2500A @ 192.168.1.2)      Mac Mini (192.168.1.126)
+=====================================   ================================
+Lightweight Data Export:                Data Processing Hub:
+
+• nlbwmon (bandwidth)  ──UDP:8094───► Telegraf (Collector)
+• dnsmasq (DNS)        ──syslog────►    │
+• node-exporter        ──HTTP:9100─►    │
+  (router health)                        ├──► InfluxDB 2.7 ──► Grafana
+                                        │     (single source
+Infrastructure pings  ◄────────────────┘      of truth)
+CDN monitoring        ◄────────────────┘
 ```
 
 ### Stack Components
 
-- **InfluxDB 2.7**: Time-series database (1 year retention)
-- **Telegraf**: UDP listener for InfluxDB line protocol
-- **Grafana**: Visualization dashboards
-- **Router Daemons**: Real-time data collection (DNS, connections, bandwidth)
+- **InfluxDB 2.7**: Time-series database (Pure InfluxDB, single source of truth)
+- **Telegraf**: Collector (UDP listener, HTTP scraper, ping monitor, exec scripts)
+- **Grafana**: Visualization dashboards (Flux queries)
+- **Router Exports**: Lightweight data collection (bandwidth via UDP, health via HTTP)
 
 ## Quick Start
 
@@ -47,33 +55,41 @@ podman-compose ps
 
 ## Data Sources
 
-### Real-time DNS Queries
+### Currently Active ✅
 
-- **Daemon:** `/root/bin/dns-monitor-daemon.sh` on router
-- **Method:** `tail -F /var/log/dnsmasq.log`
-- **Latency:** <1ms from query to InfluxDB
+#### Bandwidth Tracking (Router → Mac Mini)
 
-### Connection States (30s)
-
-- **Daemon:** `/root/bin/connections-monitor-daemon.sh` on router
-- **Method:** `conntrack -L` sampling every 30 seconds
-- **Data:** Device, protocol, state counts
-
-### Bandwidth (60s)
-
-- **Cron:** `/root/bin/send-bandwidth-to-influx.sh` every minute
-- **Method:** nlbwmon database deltas
+- **Script:** `/root/bin/send-bandwidth-to-influx.sh` (cron every 60s)
+- **Method:** Query nlbwmon → send via UDP:8094
+- **Router CPU:** <1%
 - **Data:** Per-device, per-protocol bandwidth
 
-### Daemon Management
+#### Infrastructure Health (Mac Mini)
 
-```bash
-# On router (192.168.1.2)
-/etc/init.d/influxdb-monitors start|stop|restart|status
+- **Method:** Telegraf inputs.ping
+- **Targets:** Routers, Starlink Dishy, WAN (8.8.8.8, 1.1.1.1)
+- **Frequency:** 10-30 seconds
 
-# Check status
-ps | grep -E '(dns-monitor|connections-monitor)'
-```
+#### CDN Monitoring (Mac Mini)
+
+- **Script:** `scripts/streaming-ping-orchestrator.py`
+- **Method:** Opportunistic pinging when streaming detected
+- **Frequency:** Every 30 seconds
+
+### Planned Additions 🔄
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for planned additions:
+- Router health monitoring (prometheus-node-exporter-lua)
+- DNS query logging (dnsmasq syslog)
+- Streaming fault diagnosis
+
+### Disabled (Previous CPU Overload) ❌
+
+The following router-side scripts were disabled due to causing 90% CPU usage:
+- `dns-monitor-daemon.sh` - Real-time DNS parsing
+- `connections-monitor-daemon.sh` - Connection state tracking
+- `monitor-connection-flows.sh` - Connection flow details
+- netifyd service - Deep packet inspection (341MB RAM)
 
 ## Dashboards
 
