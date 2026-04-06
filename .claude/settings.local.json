@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__serena__list_dir",
+      "Bash(ssh root@192.168.1.2:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(curl:*)",
+      "Bash(find:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(python3:*)",
+      "Bash(ls:*)",
+      "WebFetch(domain:community.grafana.com)",
+      "WebFetch(domain:grafana.com)",
+      "Bash(route:*)",
+      "Bash(ip route:*)",
+      "Bash(cat:*)",
+      "Bash(podman exec influxdb influx query:*)",
+      "mcp__serena__activate_project",
+      "mcp__serena__check_onboarding_performed",
+      "Bash(gh api:*)",
+      "mcp__serena__get_current_config",
+      "mcp__serena__find_file",
+      "mcp__serena__search_for_pattern",
+      "Bash(grep:*)",
+      "mcp__context7__query-docs"
+    ]
+  }
+}
