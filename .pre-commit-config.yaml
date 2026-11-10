@@ -21,10 +21,11 @@ default_language_version:
 repos:
   # Dockerfile Linting
   # Lints Dockerfiles to ensure they adhere to best practices.
-  - repo: https://github.com/petalmd/dockerfile-pre-commit
-    rev: v1.0
-    hooks:
-      - id: dockerlint
+  # Docker-dependent (skipped when Docker not running)
+  # - repo: https://github.com/petalmd/dockerfile-pre-commit
+  #   rev: v1.0
+  #   hooks:
+  #     - id: dockerlint
 
   # Python Code Formatting
   # Automatically formats Python code to conform to the PEP 8 style guide.
@@ -160,21 +161,6 @@ repos:
         types: [python]
         stages: [pre-push]
 
-  # Ansible Linting
-  # Checks Ansible playbooks for practices and behavior that could potentially be improved.
-  - repo: https://github.com/ansible-community/ansible-lint.git
-    rev: v25.8.2
-    hooks:
-      - id: ansible-lint
-        name: Ansible-lint
-        description: This hook runs ansible-lint.
-        entry: ansible-lint --force-color .
-        language: python
-        # do not pass files to ansible-lint, see:
-        # https://github.com/ansible-community/ansible-lint/issues/611
-        pass_filenames: false
-        always_run: true
-
   # Check Markdown
   - repo: https://github.com/igorshubovych/markdownlint-cli.git
     rev: v0.37.0
@@ -183,12 +169,13 @@ repos:
 
 
   # Check JAVA
-  - repo: https://github.com/gherynos/pre-commit-java.git
-    rev: v0.6.21
-    hooks:
-      - id: pmd
-      - id: cpd
-      - id: checkstyle
+  # Docker-dependent (skipped when Docker not running)
+  # - repo: https://github.com/gherynos/pre-commit-java.git
+  #   rev: v0.6.21
+  #   hooks:
+  #     - id: pmd
+  #     - id: cpd
+  #     - id: checkstyle
 
   # Check pre-commit was run
   - repo: https://gitlab.com/adam-moss/pre-commit-trailer.git

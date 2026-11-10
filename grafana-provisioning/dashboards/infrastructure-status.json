@@ -364,7 +364,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"cpu_user\" or r._field == \"cpu_system\" or r._field == \"cpu_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => exists r.cpu_user and exists r.cpu_system and exists r.cpu_total and r.cpu_total > 0.0)\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.cpu_user + r.cpu_system) / float(v: r.cpu_total) * 100.0}))\n  |> mean()\n  |> rename(columns: {_value: \"Average\"})",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"node_load1\")\n  |> mean()\n  |> map(fn: (r) => ({r with _value: r._value / 2.0 * 100.0}))\n  |> rename(columns: {_value: \"Average\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\", \"device\", \"host\", \"location\", \"url\"])",
           "refId": "A"
         },
         {
@@ -372,7 +372,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"cpu_user\" or r._field == \"cpu_system\" or r._field == \"cpu_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => exists r.cpu_user and exists r.cpu_system and exists r.cpu_total and r.cpu_total > 0.0)\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.cpu_user + r.cpu_system) / float(v: r.cpu_total) * 100.0}))\n  |> max()\n  |> rename(columns: {_value: \"Peak\"})",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"node_load1\")\n  |> max()\n  |> map(fn: (r) => ({r with _value: r._value / 2.0 * 100.0}))\n  |> rename(columns: {_value: \"Peak\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\", \"device\", \"host\", \"location\", \"url\"])",
           "refId": "B"
         }
       ],
@@ -429,7 +429,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"mem_used\" or r._field == \"mem_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => exists r.mem_used and exists r.mem_total and r.mem_total > 0.0)\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.mem_used) / float(v: r.mem_total) * 100.0}))\n  |> mean()\n  |> rename(columns: {_value: \"Average\"})",
+          "query": "total_mem = from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"node_memory_MemTotal_bytes\")\n  |> last()\n  |> findColumn(column: \"_value\", fn: (key) => true)\n\nfrom(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"node_memory_MemAvailable_bytes\")\n  |> mean()\n  |> map(fn: (r) => ({r with _value: (total_mem[0] - r._value) / total_mem[0] * 100.0}))\n  |> rename(columns: {_value: \"Average\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\", \"device\", \"host\", \"location\", \"url\"])",
           "refId": "A"
         },
         {
@@ -437,7 +437,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"mem_used\" or r._field == \"mem_total\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => exists r.mem_used and exists r.mem_total and r.mem_total > 0.0)\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: r.mem_used) / float(v: r.mem_total) * 100.0}))\n  |> max()\n  |> rename(columns: {_value: \"Peak\"})",
+          "query": "total_mem = from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"node_memory_MemTotal_bytes\")\n  |> last()\n  |> findColumn(column: \"_value\", fn: (key) => true)\n\nfrom(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"node_memory_MemAvailable_bytes\")\n  |> max()\n  |> map(fn: (r) => ({r with _value: (total_mem[0] - r._value) / total_mem[0] * 100.0}))\n  |> rename(columns: {_value: \"Peak\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\", \"device\", \"host\", \"location\", \"url\"])",
           "refId": "B"
         }
       ],
@@ -492,7 +492,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\" and r.interface == \"wan\")\n  |> filter(fn: (r) => r._field == \"rx_rate\")\n  |> mean()\n  |> rename(columns: {_value: \"Download Avg\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\", \"device\", \"host\", \"interface\"])",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\")\n  |> filter(fn: (r) => r._field == \"node_network_receive_bytes_total\" and (r.device == \"eth0\" or r.device == \"eth1\"))\n  |> derivative(unit: 1s, nonNegative: true)\n  |> group()\n  |> sum()\n  |> mean()\n  |> rename(columns: {_value: \"Download Avg\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\"])",
           "refId": "A"
         },
         {
@@ -500,7 +500,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\" and r.interface == \"wan\")\n  |> filter(fn: (r) => r._field == \"rx_rate\")\n  |> max()\n  |> rename(columns: {_value: \"Download Peak\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\", \"device\", \"host\", \"interface\"])",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\")\n  |> filter(fn: (r) => r._field == \"node_network_receive_bytes_total\" and (r.device == \"eth0\" or r.device == \"eth1\"))\n  |> derivative(unit: 1s, nonNegative: true)\n  |> group()\n  |> sum()\n  |> max()\n  |> rename(columns: {_value: \"Download Peak\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\"])",
           "refId": "B"
         },
         {
@@ -508,7 +508,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\" and r.interface == \"wan\")\n  |> filter(fn: (r) => r._field == \"tx_rate\")\n  |> mean()\n  |> rename(columns: {_value: \"Upload Avg\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\", \"device\", \"host\", \"interface\"])",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\")\n  |> filter(fn: (r) => r._field == \"node_network_transmit_bytes_total\" and (r.device == \"eth0\" or r.device == \"eth1\"))\n  |> derivative(unit: 1s, nonNegative: true)\n  |> group()\n  |> sum()\n  |> mean()\n  |> rename(columns: {_value: \"Upload Avg\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\"])",
           "refId": "C"
         },
         {
@@ -516,7 +516,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\" and r.interface == \"wan\")\n  |> filter(fn: (r) => r._field == \"tx_rate\")\n  |> max()\n  |> rename(columns: {_value: \"Upload Peak\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\", \"device\", \"host\", \"interface\"])",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\")\n  |> filter(fn: (r) => r._field == \"node_network_transmit_bytes_total\" and (r.device == \"eth0\" or r.device == \"eth1\"))\n  |> derivative(unit: 1s, nonNegative: true)\n  |> group()\n  |> sum()\n  |> max()\n  |> rename(columns: {_value: \"Upload Peak\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\"])",
           "refId": "D"
         }
       ],
@@ -573,7 +573,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\" and r.device == \"glmt2500a\" and r.interface == \"wan\")\n  |> filter(fn: (r) => r._field == \"rx_errors\" or r._field == \"rx_dropped\")\n  |> difference(nonNegative: true)\n  |> sum()\n  |> map(fn: (r) => ({r with _field: if r._field == \"rx_errors\" then \"Errors\" else \"Dropped\"}))",
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"router_stats\")\n  |> filter(fn: (r) => r._field == \"node_network_receive_errs_total\" or r._field == \"node_network_receive_drop_total\")\n  |> filter(fn: (r) => r.device == \"eth0\" or r.device == \"eth1\")\n  |> difference(nonNegative: true)\n  |> group()\n  |> sum()\n  |> last()\n  |> map(fn: (r) => ({r with _field: if r._field == \"node_network_receive_errs_total\" then \"Errors\" else \"Dropped\"}))\n  |> drop(columns: [\"_start\", \"_stop\", \"_measurement\", \"device\"])",
           "refId": "A"
         }
       ],
@@ -581,12 +581,458 @@
       "type": "stat"
     },
     {
+      "fieldConfig": {
+        "defaults": {
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 12
+      },
+      "id": 201,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dhcp_pool\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"utilization_percent\")\n  |> last()\n  |> drop(columns: [\"_start\", \"_stop\", \"_measurement\", \"device\", \"pool_name\", \"collector\", \"host\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "DHCP Pool Utilization",
+      "type": "gauge"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Available"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 10
+                    },
+                    {
+                      "color": "green",
+                      "value": 30
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 12
+      },
+      "id": 202,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dhcp_pool\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"active_leases\")\n  |> last()\n  |> map(fn: (r) => ({r with _field: \"Active\"}))\n  |> drop(columns: [\"_start\", \"_stop\", \"_measurement\", \"device\", \"pool_name\", \"collector\", \"host\"])",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dhcp_pool\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"available_leases\")\n  |> last()\n  |> map(fn: (r) => ({r with _field: \"Available\"}))\n  |> drop(columns: [\"_start\", \"_stop\", \"_measurement\", \"device\", \"pool_name\", \"collector\", \"host\"])",
+          "refId": "B"
+        }
+      ],
+      "title": "DHCP Availability",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": [],
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 12
+      },
+      "id": 203,
+      "options": {
+        "displayLabels": ["percent"],
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "values": []
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dhcp_pool\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"static_leases\")\n  |> last()\n  |> map(fn: (r) => ({r with _field: \"Static\"}))\n  |> drop(columns: [\"_start\", \"_stop\", \"_measurement\", \"device\", \"pool_name\", \"collector\", \"host\"])",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dhcp_pool\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"dynamic_leases\")\n  |> last()\n  |> map(fn: (r) => ({r with _field: \"Dynamic\"}))\n  |> drop(columns: [\"_start\", \"_stop\", \"_measurement\", \"device\", \"pool_name\", \"collector\", \"host\"])",
+          "refId": "B"
+        }
+      ],
+      "title": "Static vs Dynamic Leases",
+      "type": "piechart"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 12
+      },
+      "id": 204,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["mean"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dhcp_pool\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"lease_rate_per_hour\")\n  |> mean()\n  |> rename(columns: {_value: \"Leases/Hour\"})\n  |> drop(columns: [\"_start\", \"_stop\", \"_field\", \"_measurement\", \"device\", \"pool_name\", \"collector\", \"host\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "DHCP Event Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "P951FEA4DE68E13C5"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "remaining_seconds"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "displayName",
+                "value": "Time Remaining"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lease_type"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Type"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "value": "static",
+                    "options": {
+                      "color": "blue"
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "value": "dynamic",
+                    "options": {
+                      "color": "purple"
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "device_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Device"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mac"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "MAC Address"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ip"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "IP Address"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "hostname"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Hostname"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "id": 205,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "Time Remaining"
+          }
+        ]
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"network\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"dhcp_lease\" and r.device == \"glmt2500a\")\n  |> filter(fn: (r) => r._field == \"remaining_seconds\")\n  |> last()\n  |> group()\n  |> drop(columns: [\"_start\", \"_stop\", \"_time\", \"_measurement\", \"_field\", \"device\", \"collector\", \"host\"])\n  |> rename(columns: {_value: \"remaining_seconds\"})\n  |> sort(columns: [\"remaining_seconds\"], desc: false)",
+          "refId": "A"
+        }
+      ],
+      "title": "Active DHCP Leases",
+      "type": "table"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 26
       },
       "id": 102,
       "panels": [],
@@ -659,7 +1105,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 13
+        "y": 27
       },
       "id": 9,
       "options": {
@@ -750,7 +1196,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 13
+        "y": 27
       },
       "id": 10,
       "options": {
@@ -781,7 +1227,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 49
       },
       "id": 103,
       "panels": [],
@@ -823,7 +1269,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 22
+        "y": 36
       },
       "id": 11,
       "options": {
@@ -882,7 +1328,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 22
+        "y": 36
       },
       "id": 12,
       "options": {
@@ -913,7 +1359,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 44
       },
       "id": 105,
       "panels": [],
@@ -966,7 +1412,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 31
+        "y": 45
       },
       "id": 14,
       "options": {
@@ -1023,7 +1469,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 31
+        "y": 45
       },
       "id": 15,
       "options": {
@@ -1080,7 +1526,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 31
+        "y": 45
       },
       "id": 16,
       "options": {
@@ -1137,7 +1583,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 31
+        "y": 45
       },
       "id": 17,
       "options": {
@@ -1201,7 +1647,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 35
+        "y": 49
       },
       "id": 18,
       "options": {
@@ -1290,7 +1736,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 35
+        "y": 49
       },
       "id": 19,
       "options": {
@@ -1329,7 +1775,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 55
       },
       "id": 104,
       "panels": [],
@@ -1403,7 +1849,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 42
+        "y": 56
       },
       "id": 13,
       "options": {
